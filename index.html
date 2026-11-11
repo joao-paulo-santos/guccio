@@ -80,8 +80,26 @@
   #gateHint { color:#5b6275; font-size:11px; margin-top:20px; letter-spacing:1px; }
   #gate.shakeit { animation:shake .35s linear; }
 
-  /* ============ CASE SCREEN ============ */
-  #game { background:radial-gradient(1200px 500px at 50% -10%, #17202e 0%, #0b0d12 60%); padding-left:176px; }
+  /* ============ FRIENDS ============ */
+  #friends { background:radial-gradient(900px 500px at 50% 20%, #1a2433 0%, #0b0d12 65%); z-index:55; cursor:pointer; }
+  #friendsTitle { font-family:Impact,"Arial Black",sans-serif; color:#ffcf3f; letter-spacing:4px; font-size:clamp(22px,4vw,34px); }
+  #friendsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #friendsGrid { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; margin-top:34px; max-width:900px; }
+  .friendCard { width:150px; text-align:center; }
+  .friendCard .art { font-size:44px; line-height:1; }
+  .friendCard .art.pic {
+    width:100%; height:96px; border-radius:10px; border:2px solid #2a3140;
+    background-size:cover; background-position:center; background-repeat:no-repeat;
+    box-shadow:0 6px 18px rgba(0,0,0,.5);
+  }
+  .friendName {
+    font-family:Impact,"Arial Black",sans-serif; color:#fff; font-size:22px; letter-spacing:2px;
+    margin-top:12px; opacity:0; text-shadow:0 3px 0 rgba(0,0,0,.6);
+    animation:slam .5s cubic-bezier(.2,1.8,.3,1) both;
+  }
+  #friendsHint { position:absolute; bottom:16px; color:#4a5162; font-size:11px; letter-spacing:1px; }
+
+  /* ============ CASE SCREEN ============ */  #game { background:radial-gradient(1200px 500px at 50% -10%, #17202e 0%, #0b0d12 60%); padding-left:176px; }
 
   /* ============ INVENTORY RAIL ============ */
   #inv {
@@ -338,6 +356,14 @@
   <div id="skipHint">click anywhere to continue. the crates require your consent</div>
 </div>
 
+<!-- ==================== FRIENDS ==================== -->
+<div id="friends" class="screen hidden">
+  <div id="friendsTitle">TONIGHT'S SPONSORS</div>
+  <div id="friendsSub">the degenerates bankrolling this event</div>
+  <div id="friendsGrid"></div>
+  <div id="friendsHint">click to keep going</div>
+</div>
+
 <!-- ==================== CASE SCREEN ==================== -->
 <div id="game" class="screen hidden">
   <div id="topbar">
@@ -427,6 +453,19 @@ const CONFIG = {
     sub:   "guccio's totally legit birthday loot crate simulator",
   },
 
+  // the sponsors walk in right after the birthday intro, max 5 per page,
+  // pages flip on their own or on click. drop photos into assets/friends/
+  // and keep an emoji per friend as the fallback if a photo is missing.
+  friends: [
+    { name: "Friend 1", img: "assets/friends/f1.jpg", emoji: "🙋" },
+    { name: "Friend 2", img: "assets/friends/f2.jpg", emoji: "🙋" },
+    { name: "Friend 3", img: "assets/friends/f3.jpg", emoji: "🙋" },
+    { name: "Friend 4", img: "assets/friends/f4.jpg", emoji: "🙋" },
+    { name: "Friend 5", img: "assets/friends/f5.jpg", emoji: "🙋" },
+    { name: "Friend 6", img: "assets/friends/f6.jpg", emoji: "🙋" },
+    { name: "Friend 7", img: "assets/friends/f7.jpg", emoji: "🙋" },
+  ],
+
   // any item can also carry img: "https://..." to show real art instead of the emoji.
   // dead link or offline? the emoji quietly comes back. working examples:
   //   steam cover: https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/<APPID>/header.jpg
@@ -453,7 +492,7 @@ const CONFIG = {
         //      it only decrypts with the gate password. crawlers get static.
         key: "PASTE-KEY-1-HERE",
         // who paid for this gift, shown on the win screen. friends adding gifts: your name here
-        from: "ecila",
+        from: "ecila and patty",
       },
       nearMiss: {
         name: "★ Karambit | Doppler",
@@ -477,7 +516,7 @@ const CONFIG = {
         // win sound: maven says "Violence. Conflict. Pleasure."
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_02_a.ogg",
         key: "PASTE-KEY-2-HERE",
-        from: "ecila",
+        from: "ecila and patty",
       },
       nearMiss: {
         name: "Mirror of Kalandra",
@@ -501,7 +540,7 @@ const CONFIG = {
         // win sound: maven says "A rare treat."
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_85_05_a.ogg",
         key: "PASTE-KEY-3-HERE",
-        from: "ecila",
+        from: "ecila and patty",
       },
       nearMiss: {
         name: "Diamond Pickaxe",
@@ -526,7 +565,7 @@ const CONFIG = {
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_03_a.ogg",
         // direct steam gift, no key to paste, the reveal below says it for us
         reveal: "Already on its way to your Steam account",
-        from: "ecila",
+        from: "ecila and patty",
       },
       nearMiss: {
         name: "Metal Upa, rare",
@@ -550,7 +589,7 @@ const CONFIG = {
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_85_05_b.ogg",
         // direct steam gift, no key to paste
         reveal: "Already on its way to your Steam account",
-        from: "ecila",
+        from: "ecila and patty",
       },
       nearMiss: {
         name: "IBN 5100",
@@ -884,13 +923,54 @@ function startIntro() {
     introEl.classList.add("fading");
     setTimeout(() => {
       introEl.classList.add("hidden");
-      gameEl.classList.remove("hidden");
-      loadRound(0);
+      startFriends();
     }, 850);
   }
   // the intro only moves on a click, always. that same click unlocks the audio,
   // so izaro's greeting is guaranteed to be heard instead of skipped by autoplay.
   introEl.addEventListener("click", toGame);
+}
+
+// ---------- friends presentation, the sponsors walk in ----------
+function startFriends() {
+  const list = CONFIG.friends || [];
+  const PER_PAGE = 5;
+  const pages = Math.ceil(list.length / PER_PAGE);
+  const scr = $("friends");
+  let page = 0, timer = null;
+
+  function enterGame() {
+    if (!gameEl.classList.contains("hidden")) return; // already through, ignore extra clicks
+    scr.classList.add("hidden");
+    gameEl.classList.remove("hidden");
+    loadRound(0);
+  }
+  if (!pages) { enterGame(); return; }
+
+  function showPage(k) {
+    const grid = $("friendsGrid");
+    grid.innerHTML = "";
+    const slice = list.slice(k * PER_PAGE, k * PER_PAGE + PER_PAGE);
+    slice.forEach((f, i) => {
+      const card = document.createElement("div"); card.className = "friendCard";
+      const nm = document.createElement("div"); nm.className = "friendName";
+      nm.textContent = f.name;
+      nm.style.animationDelay = (0.25 + i * 0.22) + "s"; // names slam in one by one
+      card.append(artEl(f), nm);
+      grid.appendChild(card);
+      setTimeout(() => beep(520 + i * 60, 0.12, "triangle", 0.1), 250 + i * 220);
+    });
+    scr.classList.remove("hidden");
+    clearTimeout(timer);
+    timer = setTimeout(next, 2600 + slice.length * 220); // short and sweet, then flip
+  }
+  function next() {
+    page++;
+    if (page >= pages) { clearTimeout(timer); enterGame(); return; }
+    showPage(page);
+  }
+  scr.addEventListener("click", () => { clearTimeout(timer); next(); });
+  showPage(0);
 }
 
 // ---------- strip machinery ----------
