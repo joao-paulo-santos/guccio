@@ -454,8 +454,8 @@ const CONFIG = {
   },
 
   // the sponsors walk in right after the birthday intro, max 4 per page,
-  // pages flip on their own or on click. drop photos into assets/ (or anywhere),
-  // keep an emoji per friend as the fallback if a photo is missing.
+  // pages flip on click only so every photo gets its moment. drop photos into
+  // assets/ (or anywhere) and keep an emoji per friend as fallback if missing.
   friends: [
     { name: "Ecila and Patty", img: "assets/ecilaandpaquete.jpg", emoji: "🙋" },
     { name: "Marco", img: "assets/marco.jpg", emoji: "🙋", pos: "center" },
@@ -939,7 +939,7 @@ function startFriends() {
   const PER_PAGE = 4; // four per page keeps the photos big
   const pages = Math.ceil(list.length / PER_PAGE);
   const scr = $("friends");
-  let page = 0, timer = null;
+  let page = 0;
 
   function enterGame() {
     if (!gameEl.classList.contains("hidden")) return; // already through, ignore extra clicks
@@ -963,15 +963,14 @@ function startFriends() {
       setTimeout(() => beep(520 + i * 60, 0.12, "triangle", 0.1), 250 + i * 220);
     });
     scr.classList.remove("hidden");
-    clearTimeout(timer);
-    timer = setTimeout(next, 2600 + slice.length * 220); // short and sweet, then flip
   }
   function next() {
     page++;
-    if (page >= pages) { clearTimeout(timer); enterGame(); return; }
+    if (page >= pages) { enterGame(); return; }
     showPage(page);
   }
-  scr.addEventListener("click", () => { clearTimeout(timer); next(); });
+  // pages only move on a click, everyone gets appreciated at their own pace
+  scr.addEventListener("click", next);
   showPage(0);
 }
 
@@ -1326,8 +1325,8 @@ $("restart").addEventListener("click", () => location.reload());
   }
   $("gateHint").textContent = G.hint || "";
 
-  async function tryPass() {
-    const pass = $("gatePass").value;
+  async function tryPass(pass) {
+    pass = pass || $("gatePass").value;
     if (!pass) return;
     const keyHex = await pbkdf2Hex(pass, G.salt, 100000);
     const verifier = await sha256Hex(keyHex + ":verify");
@@ -1341,8 +1340,12 @@ $("restart").addEventListener("click", () => location.reload());
       gateEl.classList.remove("shakeit"); void gateEl.offsetWidth; gateEl.classList.add("shakeit");
     }
   }
-  $("gateBtn").addEventListener("click", tryPass);
+  $("gateBtn").addEventListener("click", () => tryPass());
   $("gatePass").addEventListener("keydown", (e) => { if (e.key === "Enter") tryPass(); });
+
+  // lazy reload: ?password=whatever unlocks on its own, no retyping every reload
+  const urlPass = new URLSearchParams(window.location.search).get("password");
+  if (urlPass) { $("gatePass").value = urlPass; tryPass(urlPass); }
 })();
 </script>
 </body>
