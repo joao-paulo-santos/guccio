@@ -325,6 +325,7 @@
     animation:btnpulse .7s ease infinite alternate;
   }
   @keyframes btnpulse { to { transform:scale(1.06); box-shadow:0 4px 0 #8a650b, 0 0 30px rgba(240,180,34,.55); } }
+  #callBtn:disabled { opacity:.45; cursor:default; animation:none; }
   #callFine { margin-top:20px; color:#4a5162; font-size:11px; }
 
   /* ============ VAAL / ATZIRI ============ */
@@ -1198,6 +1199,7 @@ function maybeShowCall(goNext) {
       $("callBarWrap").style.visibility = "";
       $("callBarLabel").style.visibility = "";
       btn.textContent = C.button || "ADMINISTER";
+      btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 2000); // no insta misclicks
       patient.textContent = patientEmoji(value);
       heart();
       drain = setInterval(() => {
@@ -1224,6 +1226,7 @@ function maybeShowCall(goNext) {
         sub.textContent = C.saved || "PATIENT STABILIZED.";
         jingle();
         btn.textContent = "CONTINUE";
+        btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 2000); // let it sink in
       }
       return;
     }
