@@ -1133,10 +1133,15 @@ function maybeShowCall(goNext) {
   $("call").classList.remove("hidden");
 
   let phase = "ringing", value = 15;
-  let drain = null, urgency = null;
-  const ring = setInterval(() => { // old school phone chirp
-    for (let i = 0; i < 5; i++) { beep(880, 0.09, "square", 0.06, i * 0.16); beep(1240, 0.09, "square", 0.04, i * 0.16 + 0.05); }
-  }, 2200);
+  let drain = null, urgencyTimer = null;
+  const ring = setInterval(() => { // proper loud phone bell, two tone trill
+    for (let i = 0; i < 6; i++) { beep(920, 0.1, "square", 0.16, i * 0.15); beep(1250, 0.1, "square", 0.12, i * 0.15 + 0.04); }
+  }, 2000);
+
+  function heart() { // audible heartbeat that accelerates as things get worse
+    beep(140, 0.14, "sine", 0.11); beep(95, 0.12, "sine", 0.09, 0.16);
+    urgencyTimer = setTimeout(heart, 340 + (value / 100) * 560); // 0.9s calm, 0.34s panic
+  }
 
   btn.onclick = () => {
     if (phase === "ringing") {
@@ -1148,12 +1153,11 @@ function maybeShowCall(goNext) {
       $("callBarWrap").style.visibility = "";
       $("callBarLabel").style.visibility = "";
       btn.textContent = C.button || "ADMINISTER";
-      urgency = setInterval(() => { // low heartbeat, hands are shaking
-        beep(150, 0.12, "sine", 0.035); beep(110, 0.1, "sine", 0.03, 0.18);
-      }, 650);
+      heart();
       drain = setInterval(() => {
-        // drains fast while healthy, crawls near the edge: he gets his dramatic moment
-        value = Math.max(2, value - (0.15 + (value / 100) * 0.55));
+        // proportional decay: the drain itself slows down the whole way down,
+        // no cliff, just a long dramatic fade toward the edge
+        value = Math.max(2, value - (value * 0.0073 + 0.02));
         bar.style.width = value + "%";
       }, 100);
       return;
@@ -1166,7 +1170,7 @@ function maybeShowCall(goNext) {
       s.classList.remove("stab"); void s.offsetWidth; s.classList.add("stab"); // pump
       if (value >= 100) {
         phase = "saved";
-        clearInterval(drain); clearInterval(urgency);
+        clearInterval(drain); clearTimeout(urgencyTimer);
         patient.textContent = "😌"; patient.classList.add("saved");
         bar.classList.add("savedbar");
         sub.textContent = C.saved || "PATIENT STABILIZED.";
