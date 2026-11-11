@@ -476,6 +476,8 @@ const CONFIG = {
   //   poe art:     https://cdn.poedb.tw/image/Art/2DItems/Currency/CurrencyDuplicate.webp
   //
   // one round per gift. the strip always lands on the prize.
+  // order knobs: finale: true pins a round last. after: "Prize Name" (or a list)
+  // makes a round wait for its dependencies. everything else shuffles per reload.
   // nearMiss is the item that creeps past the marker RIGHT before the prize.
   rounds: [
     {
@@ -583,6 +585,7 @@ const CONFIG = {
     {
       caseName: "THE MIDNIGHT CRATE",
       caseNote: "the sober gamblers went home hours ago",
+      after: "STEINS;GATE", // world line order: 0 only plays after the first one
       prize: {
         name: "STEINS;GATE 0",
         sub:  "steam gift",
@@ -631,6 +634,7 @@ const CONFIG = {
     {
       caseName: "THE TREASURE CRATE",
       caseNote: "the one every pirate spends a lifetime chasing",
+      finale: true, // always the closing round, the friends joke gets the last word
       prize: {
         name: "One Piece",
         sub:  "the real treasure",
@@ -1012,6 +1016,33 @@ function shuffle(a) {
   return a;
 }
 
+// gift order shuffles fresh on every reload, nothing should feel scripted.
+// two knobs per round:
+//   finale: true  pinned to the very end, the friends joke needs the last word
+//   after: "Name"  (or an array of names) only plays once those prizes already did
+// this rewrites CONFIG.rounds in place before anything reads it.
+(function orderRounds() {
+  const byName = new Map(CONFIG.rounds.map((r) => [r.prize.name, r]));
+  const depsOf = (r) => {
+    const d = r.after ? (Array.isArray(r.after) ? r.after : [r.after]) : [];
+    return d.filter((name) => byName.has(name)); // unknown names are ignored
+  };
+  const pending = CONFIG.rounds.filter((r) => !r.finale);
+  const finales = CONFIG.rounds.filter((r) => r.finale);
+  const ordered = [];
+  const placed = new Set();
+  while (pending.length) {
+    const ready = pending.filter((r) => depsOf(r).every((name) => placed.has(name)));
+    if (!ready.length) break; // circular config, leftovers keep their written order
+    const pick = ready[Math.floor(Math.random() * ready.length)];
+    ordered.push(pick);
+    placed.add(pick.prize.name);
+    pending.splice(pending.indexOf(pick), 1);
+  }
+  CONFIG.rounds.length = 0;
+  CONFIG.rounds.push(...ordered, ...pending, ...finales);
+})();
+
 // builds the art slot: real picture if the item has img, emoji otherwise
 function artEl(item) {
   const a = document.createElement("div");
@@ -1030,20 +1061,25 @@ function artEl(item) {
   return a;
 }
 
-// not-yet-won prizes join the drop pool of every crate, realism first.
-// the current round's prize stays out of the filler reel (it lands exactly once,
-// at the marker), and prizes already won never come back.
+// the drop pool: jokes, every near miss that is not on duty this round, and
+// every prize still in play. the current round's prize lands exactly once (on
+// the marker) so it stays out of its own fillers, its near miss sits only in
+// the drama slot right before it, and prizes already won never come back.
 function dropPool(excludeNames) {
   const ex = new Set(excludeNames || []);
   const prizes = CONFIG.rounds.map((r) => r.prize).filter((p) => !ex.has(p.name));
-  return shuffle([...CONFIG.jokeItems, ...prizes]);
+  const nears = CONFIG.rounds.map((r) => r.nearMiss).filter((n) => n && !ex.has(n.name));
+  return shuffle([...CONFIG.jokeItems, ...nears, ...prizes]);
 }
-// prizes to keep out of a given round's fillers: everything won so far plus this one
+// what stays out of a given round's fillers: everything won so far,
+// plus this round's prize and its near miss
 function roundExclusions(i) {
+  const r = CONFIG.rounds[i];
   return Array.from(new Set([
     ...wonKeys.map((rk) => rk.prize.name),
-    CONFIG.rounds[i].prize.name,
-  ]));
+    r.prize.name,
+    r.nearMiss && r.nearMiss.name,
+  ].filter(Boolean)));
 }
 
 function makeCard(item) {
