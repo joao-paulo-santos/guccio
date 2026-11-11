@@ -933,7 +933,8 @@ function startIntro() {
 
 // ---------- friends presentation, the sponsors walk in ----------
 function startFriends() {
-  const list = CONFIG.friends || [];
+  // shuffled fresh on every reload: no sponsor is more important than another
+  const list = shuffle(CONFIG.friends || []);
   const PER_PAGE = 5;
   const pages = Math.ceil(list.length / PER_PAGE);
   const scr = $("friends");
