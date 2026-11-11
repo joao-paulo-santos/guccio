@@ -259,6 +259,51 @@
   }
   #tujenFine { position:absolute; bottom:16px; color:#6b5836; font-size:11px; }
 
+  /* ============ ULTIMATUM / TRIALMASTER ============ */
+  #trial { background:#07090d; z-index:60; overflow:hidden; }
+  #trialBg {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    height:96vh; opacity:.9; pointer-events:none;
+  }
+  #trialGrid {
+    position:relative; z-index:2; display:flex; align-items:stretch; gap:30px;
+    width:min(92vw,1000px); min-height:64vh;
+  }
+  #trialLeft, #trialRight { flex:1; display:flex; flex-direction:column; align-items:center; }
+  #trialInvTitle { color:#5b6275; font-size:10px; letter-spacing:3px; margin-bottom:10px; }
+  #trialInv { width:100%; max-width:340px; display:flex; flex-direction:column; gap:6px; }
+  .trialItem {
+    display:flex; align-items:center; gap:10px;
+    background:#12151d; border:1px solid #2a3140; border-radius:8px; padding:6px 10px;
+  }
+  .trialItem .art { font-size:24px; line-height:1; }
+  .trialItem .art.pic { width:44px; height:34px; flex:0 0 44px; background-size:contain; background-position:center; background-repeat:no-repeat; }
+  .trialItem .nm { font-size:11.5px; font-weight:700; color:#e6e9f0; }
+  #trialCount { color:#ffcf3f; font-size:13px; font-weight:800; letter-spacing:1px; margin-top:12px; }
+  #trialTake, #trialAccept { margin-top:auto; } /* bottom aligned, same y on both sides */
+  #trialTake {
+    padding:12px 26px; font-size:14px; font-weight:800; letter-spacing:2px; border-radius:10px; cursor:pointer;
+    color:#1a1400; background:linear-gradient(180deg,#ffdf6e,#f0b422); border:1px solid #b98a12; box-shadow:0 4px 0 #8a650b;
+  }
+  #trialTake:hover { filter:brightness(1.07); }
+  #trialTake.gone { visibility:hidden; } /* vanished, but the layout holds its ground */
+  #trialOr {
+    align-self:center; font-family:Impact,"Arial Black",sans-serif; color:#d8b36a;
+    font-size:clamp(40px,7vw,72px); letter-spacing:6px; padding:0 10px;
+    text-shadow:0 4px 0 rgba(0,0,0,.7);
+  }
+  #trialQ {
+    font-family:Impact,"Arial Black",sans-serif; color:#d8b36a;
+    font-size:clamp(90px,16vw,160px); line-height:1; margin-top:20px;
+    text-shadow:0 6px 0 rgba(0,0,0,.7), 0 0 44px rgba(216,179,106,.35);
+  }
+  #trialAccept {
+    padding:12px 26px; font-size:14px; font-weight:800; letter-spacing:2px; border-radius:10px; cursor:pointer;
+    color:#fff; background:linear-gradient(180deg,#8a2be2,#5a1a96); border:1px solid #451273; box-shadow:0 4px 0 #370f5c;
+  }
+  #trialAccept:hover { filter:brightness(1.15); }
+  #trialFine { position:absolute; bottom:16px; color:#4a5162; font-size:11px; width:100%; text-align:center; z-index:2; }
+
   /* ============ MODAL ============ */
   #modalBack {
     position:fixed; inset:0; background:rgba(4,5,9,.82); z-index:80;
@@ -406,6 +451,25 @@
     </div>
   </div>
   <div id="fineprint">odds are 100 percent rigged in your favor (Pedro Rua Simulator), unlike real ones. do not try this at a real casino.</div>
+</div>
+
+<!-- ==================== ULTIMATUM INTERLUDE ==================== -->
+<div id="trial" class="screen hidden">
+  <img id="trialBg" alt="" draggable="false">
+  <div id="trialGrid">
+    <div id="trialLeft">
+      <div id="trialInvTitle">YOUR SO-CALLED INVENTORY</div>
+      <div id="trialInv"></div>
+      <div id="trialCount"></div>
+      <button id="trialTake">TAKE REWARDS</button>
+    </div>
+    <div id="trialOr">OR</div>
+    <div id="trialRight">
+      <div id="trialQ">?</div>
+      <button id="trialAccept">ACCEPT TRIAL</button>
+    </div>
+  </div>
+  <div id="trialFine">the trialmaster does not do refunds either</div>
 </div>
 
 <!-- ==================== TUJEN INTERLUDE ==================== -->
@@ -680,6 +744,16 @@ const CONFIG = {
 
   // tujen shows up between crates with a deal you cannot refuse.
   // the NO button runs away. it has always run away. do not fix the joke.
+  // the trialmaster's ultimatum, the FIRST interlude of the session.
+  // left: the loot so far plus a take rewards button that punishes optimism.
+  // right: the unknown. only accepting the trial moves the show forward.
+  trial: {
+    or: "OR",
+    rewardsLabel: "rewards gained",
+    take: "TAKE REWARDS",
+    accept: "ACCEPT TRIAL",
+  },
+
   interlude: {
     ask: "so. double or nothing?",
     yes: "YES",       // green button, the only one that can be caught
@@ -782,6 +856,10 @@ const CONFIG = {
     promise: "https://cdn.poedb.tw/audio/dialogue/npc/izaro/parttwo/iz_44_a.ogg",
     partial: "https://cdn.poedb.tw/audio/dialogue/npc/izaro/parttwo/iz_79_a.ogg",
     tujen:   "https://cdn.poe2db.tw/audio/dialogue/4.0/npc/part1/act4/tujen/tujena4_20_05.ogg",
+    // trialmaster: "impressive challenger" on entering his ultimatum,
+    //              "don't get too eager" when the take rewards trap is clicked
+    trialGreet: "https://cdn.poedb.tw/audio/dialogue/npc/trialmasterhideout/tri_72a_01.ogg",
+    trialEager: "https://cdn.poedb.tw/audio/dialogue/npc/trialmasterhideout/tri_71d_01.ogg",
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
   },
@@ -799,6 +877,40 @@ const CONFIG = {
    - tujen            "eh, good luck with that" on her screen
    - maven            fires on the final screen, url still pending
    ===================================================================== */
+
+// the trialmaster's ultimatum, first interlude of the session.
+// left: everything won so far plus a take rewards button that punishes optimism.
+// right: the unknown. only one of these buttons actually moves you forward.
+function maybeShowTrial(goNext) {
+  playPoe("trialGreet"); // "impressive challenger"
+  const T = CONFIG.trial || {};
+  $("trialBg").src = "assets/trialmaster.webp";
+  $("trialOr").textContent = T.or || "OR";
+  $("trialTake").textContent = T.take || "TAKE REWARDS";
+  $("trialAccept").textContent = T.accept || "ACCEPT TRIAL";
+  const inv = $("trialInv");
+  inv.innerHTML = "";
+  wonKeys.forEach((rk) => {
+    const d = document.createElement("div"); d.className = "trialItem";
+    const n = document.createElement("div"); n.className = "nm"; n.textContent = rk.prize.name;
+    d.append(artEl(rk.prize), n);
+    inv.appendChild(d);
+  });
+  $("trialCount").textContent = wonKeys.length + " " + (T.rewardsLabel || "rewards gained");
+  $("trialTake").classList.remove("gone"); // fresh trap every visit
+  gameEl.classList.add("hidden");
+  finalEl.classList.add("hidden");
+  $("trial").classList.remove("hidden");
+  $("trialTake").onclick = () => {
+    playPoe("trialEager"); // "don't get too eager"
+    $("trialTake").classList.add("gone");
+  };
+  $("trialAccept").onclick = () => {
+    beep(680, 0.09, "square", 0.1);
+    $("trial").classList.add("hidden");
+    goNext();
+  };
+}
 
 function maybeShowInterlude(roundIndex, goNext) {
   playPoe("tujen");
@@ -1030,7 +1142,7 @@ function startFriends() {
 // ---------- strip machinery ----------
 const ITEM_W = 144; // 136px card + 8px gap, keep in sync with css if you touch sizes
 const HALF_W = 68;   // half a card, where the marker meets the strip
-let roundIdx = 0, spinning = false, wonKeys = [];
+let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false;
 
 function shuffle(a) {
   a = a.slice();
@@ -1300,8 +1412,9 @@ $("nextBtn").addEventListener("click", () => {
   spinning = false;
   const next = roundIdx + 1;
   if (next < CONFIG.rounds.length) {
-    // between crates, tujen always asks double or nothing
-    maybeShowInterlude(next, () => loadRound(next));
+    // the very first interlude belongs to the trialmaster, after that tujen owns the floor
+    if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => loadRound(next)); }
+    else maybeShowInterlude(next, () => loadRound(next));
   } else {
     // last gift done, no deal to offer anymore, straight to the loot
     setTimeout(showFinal, 350);
