@@ -980,6 +980,19 @@ const CONFIG = {
     trialEager: "https://cdn.poedb.tw/audio/dialogue/npc/trialmasterhideout/tri_71d_01.ogg",
     // the diabetic call, loops until he picks up
     callRing: "https://www.myinstants.com/media/sounds/a-phone-ringing.mp3",
+    // maven reacts to the injections, one random thought per pump
+    callPumps: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_150_09_a.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_150_09_b.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_150_09_c.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_150_09_d.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_186_01_a.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_186_01_b.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_186_01_c.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_186_01_d.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_59_06_b.ogg",
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_23_04_b.ogg",
+    ],
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
   },
@@ -1135,7 +1148,26 @@ function maybeShowCall(goNext) {
   $("call").classList.remove("hidden");
 
   let phase = "ringing", value = 15;
-  let drain = null, urgencyTimer = null;
+  let drain = null, urgencyTimer = null, pumpAudio = null;
+  // the face tracks the vitals: worse, worried, better, fine, saved
+  function patientEmoji(v) {
+    if (v >= 100) return "😌";
+    if (v >= 80) return "😊";
+    if (v >= 55) return "🙂";
+    if (v >= 30) return "😟";
+    if (v >= 10) return "😖";
+    return "🥴";
+  }
+  // maven has opinions about every injection, but she finishes her thoughts:
+  // a new one only starts when the previous clip ended
+  function playPump() {
+    if (!sfxOn) return;
+    const list = (CONFIG.sounds && CONFIG.sounds.callPumps) || [];
+    if (!list.length) { beep(760 + Math.random() * 120, 0.05, "square", 0.06); return; }
+    if (pumpAudio && !pumpAudio.paused && !pumpAudio.ended) return;
+    pumpAudio = new Audio(list[Math.floor(Math.random() * list.length)]);
+    try { pumpAudio.play().catch(() => {}); } catch (e) {}
+  }
   let ring = null;
   const ringSrc = CONFIG.sounds && CONFIG.sounds.callRing;
   if (ringSrc) {
@@ -1167,19 +1199,22 @@ function maybeShowCall(goNext) {
       $("callBarWrap").style.visibility = "";
       $("callBarLabel").style.visibility = "";
       btn.textContent = C.button || "ADMINISTER";
+      patient.textContent = patientEmoji(value);
       heart();
       drain = setInterval(() => {
         // proportional decay: the drain itself slows down the whole way down,
         // no cliff, just a long dramatic fade toward the edge
         value = Math.max(2, value - (value * 0.0073 + 0.02));
         bar.style.width = value + "%";
+        patient.textContent = patientEmoji(value);
       }, 100);
       return;
     }
     if (phase === "pumping") {
       value = Math.min(100, value + 7);
       bar.style.width = value + "%";
-      beep(760 + Math.random() * 120, 0.05, "square", 0.06);
+      patient.textContent = patientEmoji(value);
+      playPump();
       const s = $("callSyringe");
       s.classList.remove("stab"); void s.offsetWidth; s.classList.add("stab"); // pump
       if (value >= 100) {
