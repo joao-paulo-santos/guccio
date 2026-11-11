@@ -84,11 +84,11 @@
   #friends { background:radial-gradient(900px 500px at 50% 20%, #1a2433 0%, #0b0d12 65%); z-index:55; cursor:pointer; }
   #friendsTitle { font-family:Impact,"Arial Black",sans-serif; color:#ffcf3f; letter-spacing:4px; font-size:clamp(22px,4vw,34px); }
   #friendsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
-  #friendsGrid { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; margin-top:34px; max-width:1050px; }
-  .friendCard { width:180px; text-align:center; }
+  #friendsGrid { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; margin-top:34px; max-width:1100px; }
+  .friendCard { width:220px; text-align:center; }
   .friendCard .art { font-size:44px; line-height:1; }
   .friendCard .art.pic {
-    width:100%; height:210px; border-radius:12px; border:2px solid #2a3140;
+    width:100%; height:270px; border-radius:12px; border:2px solid #2a3140;
     background-size:cover; background-position:center top; background-repeat:no-repeat;
     box-shadow:0 6px 18px rgba(0,0,0,.5);
   }
@@ -453,14 +453,14 @@ const CONFIG = {
     sub:   "guccio's totally legit birthday loot crate simulator",
   },
 
-  // the sponsors walk in right after the birthday intro, max 5 per page,
-  // pages flip on their own or on click. drop photos into assets/friends/
-  // and keep an emoji per friend as the fallback if a photo is missing.
+  // the sponsors walk in right after the birthday intro, max 4 per page,
+  // pages flip on their own or on click. drop photos into assets/ (or anywhere),
+  // keep an emoji per friend as the fallback if a photo is missing.
   friends: [
     { name: "Ecila and Patty", img: "assets/ecilaandpaquete.jpg", emoji: "🙋" },
     { name: "Marco", img: "assets/marco.jpg", emoji: "🙋", pos: "center" },
-    { name: "Friend 3", img: "assets/friends/f3.jpg", emoji: "🙋" },
-    { name: "Friend 4", img: "assets/friends/f4.jpg", emoji: "🙋" },
+    { name: "Pedro and Isis", img: "assets/pedroandisis.jpg", emoji: "🙋" },
+    { name: "Crusader Kadafas", img: "assets/CrusaderKadafas.png", emoji: "🙋" },
     { name: "Friend 5", img: "assets/friends/f5.jpg", emoji: "🙋" },
     { name: "Friend 6", img: "assets/friends/f6.jpg", emoji: "🙋" },
     { name: "Friend 7", img: "assets/friends/f7.jpg", emoji: "🙋" },
@@ -936,7 +936,7 @@ function startIntro() {
 function startFriends() {
   // shuffled fresh on every reload: no sponsor is more important than another
   const list = shuffle(CONFIG.friends || []);
-  const PER_PAGE = 5;
+  const PER_PAGE = 4; // four per page keeps the photos big
   const pages = Math.ceil(list.length / PER_PAGE);
   const scr = $("friends");
   let page = 0, timer = null;
