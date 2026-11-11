@@ -458,7 +458,7 @@ const CONFIG = {
   // and keep an emoji per friend as the fallback if a photo is missing.
   friends: [
     { name: "Ecila and Patty", img: "assets/ecilaandpaquete.jpg", emoji: "🙋" },
-    { name: "Marco", img: "assets/marco.jpg", emoji: "🙋" },
+    { name: "Marco", img: "assets/marco.jpg", emoji: "🙋", pos: "center" },
     { name: "Friend 3", img: "assets/friends/f3.jpg", emoji: "🙋" },
     { name: "Friend 4", img: "assets/friends/f4.jpg", emoji: "🙋" },
     { name: "Friend 5", img: "assets/friends/f5.jpg", emoji: "🙋" },
@@ -993,6 +993,7 @@ function artEl(item) {
     a.classList.add("pic");
     a.style.backgroundImage = "url(\"" + item.img + "\")";
     if (item.fit) a.style.backgroundSize = item.fit; // "cover" crops wide art, default is contain
+    if (item.pos) a.style.backgroundPosition = item.pos; // photo framing, e.g. "center"
     const probe = new Image(); // offline or dead link: quietly fall back to the emoji
     probe.onerror = () => { a.classList.remove("pic"); a.style.backgroundImage = ""; a.textContent = item.emoji || "❓"; };
     probe.src = item.img;
