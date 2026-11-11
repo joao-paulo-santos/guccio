@@ -724,14 +724,16 @@ function maybeShowInterlude(roundIndex, goNext) {
 }
 
 // poe voice lines from CONFIG.sounds. one voice at a time, no talking over each other.
+// returns true only when the line actually started playing, callers can use that
+// to decide whether consuming their turn made sense.
 const poePlayers = {};
 function playPoe(name) {
   const src = CONFIG.sounds && CONFIG.sounds[name];
-  if (!src || !sfxOn) return;
+  if (!src || !sfxOn) return false;
   let a = poePlayers[name];
   if (!a) { a = new Audio(src); a.preload = "auto"; poePlayers[name] = a; }
-  if (!a.paused) return; // this line is already talking
-  if (Object.values(poePlayers).some((p) => !p.paused && !p.ended)) return; // someone else is
+  if (!a.paused) return false; // this line is already talking
+  if (Object.values(poePlayers).some((p) => !p.paused && !p.ended)) return false; // someone else is
   try {
     a.currentTime = 0;
     a.play().then(() => { if (name === "intro") playPoe.introPlayed = true; })
@@ -743,7 +745,8 @@ function playPoe(name) {
         window.addEventListener("keydown", retry, { once: true });
       }
     });
-  } catch (e) {}
+    return true;
+  } catch (e) { return false; }
 }
 
 // optional per-prize win sound from CONFIG (prize.sound). it outranks anything else talking.
@@ -1143,8 +1146,9 @@ function dodgeRed() {
   const E = redExcuses();
   b.textContent = E[Math.min(E.length - 1, Math.floor(dodgeCount / 2))];
   beep(Math.max(180, 430 - dodgeCount * 14), 0.06, "square", 0.08);
-  playPoe(dodgeOrder[dodgeI]); // izaro has opinions about hesitation
-  dodgeI = (dodgeI + 1) % dodgeOrder.length;
+  // the turn is only consumed when the line really plays, so hovering during a
+  // line does not silently skip ahead or set up an unintended repeat.
+  if (playPoe(dodgeOrder[dodgeI])) dodgeI = (dodgeI + 1) % dodgeOrder.length;
 }
 $("btnRed").addEventListener("mouseenter", dodgeRed);
 $("btnRed").addEventListener("touchstart", (e) => { e.preventDefault(); dodgeRed(); }, { passive: false });
