@@ -397,8 +397,10 @@
   #winCard .nm { font-size:13px; font-weight:800; padding:0 8px; }
   #winCard .sb { font-size:10px; color:#79808f; padding:0 8px; }
   #winFlavor { color:#8b93a3; font-size:13.5px; line-height:1.5; min-height:20px; }
-  #giftFrom { display:none; margin-top:12px; color:#ffcf3f; font-size:12.5px; font-weight:700; letter-spacing:1px; }
+  #giftFrom { display:none; margin-top:12px; }
   #giftFrom.show { display:block; }
+  #giftFrom .gfLabel { color:#8b93a3; font-size:11px; letter-spacing:2px; margin-bottom:4px; }
+  #giftFrom .gfName { color:#ffcf3f; font-size:14px; font-weight:800; letter-spacing:1px; line-height:1.5; }
   #unwrapBtn {
     margin-top:18px; font-size:14px; font-weight:800; letter-spacing:2px;
     padding:11px 30px; border-radius:8px; cursor:pointer;
@@ -678,7 +680,7 @@ const CONFIG = {
         //      it only decrypts with the gate password. crawlers get static.
         key: "PASTE-KEY-1-HERE",
         // who paid for this gift, shown on the win screen. friends adding gifts: your name here
-        from: "ecila and patty",
+        from: ["Ecila", "Patty"],
       },
       nearMiss: {
         name: "★ Karambit | Doppler",
@@ -702,7 +704,7 @@ const CONFIG = {
         // win sound: einhar says "That's a juicy one!"
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/betrayalleague/einhar/ef_14_b.ogg",
         key: "PASTE-KEY-2-HERE",
-        from: "ecila and patty",
+        from: ["Ecila", "Patty"],
       },
       nearMiss: {
         name: "Mirror of Kalandra",
@@ -726,7 +728,7 @@ const CONFIG = {
         // win sound: maven says "A rare treat."
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_85_05_a.ogg",
         key: "PASTE-KEY-3-HERE",
-        from: "ecila and patty",
+        from: ["Ecila", "Patty"],
       },
       nearMiss: {
         name: "Diamond Pickaxe",
@@ -751,7 +753,7 @@ const CONFIG = {
         sound: "https://www.myinstants.com/media/sounds/final-fantasy-tuturu.mp3",
         // direct steam gift, no key to paste, the reveal below says it for us
         reveal: "Already on its way to your Steam account",
-        from: "ecila and patty",
+        from: ["Ecila", "Patty"],
       },
       nearMiss: {
         name: "Metal Upa, rare",
@@ -776,7 +778,7 @@ const CONFIG = {
         sound: "https://www.myinstants.com/media/sounds/the-best-hououin-kyouma-pose-steinsgate-mp3cut.mp3",
         // direct steam gift, no key to paste
         reveal: "Already on its way to your Steam account",
-        from: "ecila and patty",
+        from: ["Ecila", "Patty"],
       },
       nearMiss: {
         name: "IBN 5100",
@@ -1199,7 +1201,7 @@ function maybeShowCall(goNext) {
       $("callBarWrap").style.visibility = "";
       $("callBarLabel").style.visibility = "";
       btn.textContent = C.button || "ADMINISTER";
-      btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 2000); // no insta misclicks
+      btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 1000); // no insta misclicks
       patient.textContent = patientEmoji(value);
       heart();
       drain = setInterval(() => {
@@ -1226,7 +1228,7 @@ function maybeShowCall(goNext) {
         sub.textContent = C.saved || "PATIENT STABILIZED.";
         jingle();
         btn.textContent = "CONTINUE";
-        btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 2000); // let it sink in
+        btn.disabled = true; setTimeout(() => { btn.disabled = false; }, 1000); // let it sink in
       }
       return;
     }
@@ -1625,9 +1627,9 @@ function spin() {
   seq.forEach((it) => { const el = makeCard(it); cards.push(el); stripEl.appendChild(el); });
 
   const tx0 = w / 2 - HALF_W - pre * ITEM_W;          // start: card 'pre' centered, window fully covered
-  const creep = 34 + Math.random() * 16;              // px short of dead center, on the near miss side
+  const creep = 40 + Math.random() * 16;              // px short of dead center, on the near miss side
   const tx1 = w / 2 - HALF_W - prizeIdx * ITEM_W + creep; // end: marker just inside the prize, close call look
-  const dur = 8000;
+  const dur = 8600;
   const t0 = performance.now();
   let lastIdx = -1, lastTick = 0;
 
@@ -1693,8 +1695,14 @@ function openWinModal(r, view) {
   $("winArt").replaceChildren(artEl(r.prize));
   $("winFlavor").textContent = r.prize.flavor || "";
   const gf = $("giftFrom");
-  if (r.prize.from) { gf.textContent = "gifted by " + r.prize.from; gf.classList.add("show"); }
-  else { gf.textContent = ""; gf.classList.remove("show"); }
+  const gifters = Array.isArray(r.prize.from) ? r.prize.from : (r.prize.from ? [r.prize.from] : []);
+  if (gifters.length) { // joint gifts get one line each
+    gf.replaceChildren(...[
+      Object.assign(document.createElement("div"), { className: "gfLabel", textContent: "A Gift From:" }),
+      ...gifters.map((g) => Object.assign(document.createElement("div"), { className: "gfName", textContent: g })),
+    ]);
+    gf.classList.add("show");
+  } else { gf.replaceChildren(); gf.classList.remove("show"); }
   $("unwrapBtn").classList.toggle("hidden", !view);
   $("unwrapBtn").textContent = r.prize.reveal ? "CLAIM" : "UNWRAP KEY";
   if (!view) addToInv(r); // loot goes straight to the inventory rail
@@ -1808,7 +1816,8 @@ function showFinal() {
     const n = document.createElement("div"); n.className = "nm"; n.textContent = r.prize.name;
     n.classList.toggle("vaaled", !!r.prize.vaaled);
     const s = document.createElement("div"); s.className = "sb"; s.textContent = r.prize.sub || "";
-    const f = document.createElement("div"); f.className = "from"; f.textContent = r.prize.from ? "from " + r.prize.from : "";
+    const f = document.createElement("div"); f.className = "from";
+    f.textContent = r.prize.from ? "from " + (Array.isArray(r.prize.from) ? r.prize.from.join(" & ") : r.prize.from) : "";
     const b = document.createElement("button"); b.textContent = "SHOW KEY";
     b.addEventListener("click", () => { popSnd(); openWinModal(r, true); });
     d.append(e, n, s, f, b); grid.appendChild(d);
