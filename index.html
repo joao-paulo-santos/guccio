@@ -328,6 +328,9 @@
     font-size:clamp(28px,5vw,46px); letter-spacing:3px; text-shadow:0 4px 0 rgba(0,0,0,.7);
     min-height:1.2em;
   }
+  #vaalAsk.bad { color:#eb4b4b; }
+  #vaalPrize.poofed { animation:poof .45s ease forwards; pointer-events:none; }
+  @keyframes poof { to { transform:scale(0); opacity:0; } }
   #vaalBtn {
     margin-top:26px; padding:13px 40px; font-size:15px; font-weight:800; letter-spacing:2px;
     border-radius:10px; cursor:pointer; color:#fff;
@@ -802,6 +805,7 @@ const CONFIG = {
   vaal: {
     ask: "Vall or no balls",
     slam: "Slaam",
+    brick: "the vaal took it. the pool will provide.",
   },
 
   trial: {
@@ -964,14 +968,28 @@ function maybeShowTrial(goNext) {
   };
 }
 
+// a bricked vaal round goes back into the shuffle: at least one other crate
+// happens first when possible, and the finale always keeps the last slot.
+function requeueVaalRound(round) {
+  const rounds = CONFIG.rounds;
+  let pos = roundIdx + 2;
+  const firstFinale = rounds.findIndex((r) => r.finale);
+  if (firstFinale >= 0) pos = Math.min(pos, firstFinale);
+  pos = Math.max(roundIdx + 1, Math.min(pos, rounds.length));
+  rounds.splice(pos, 0, round);
+}
+
 // atziri's vaal interlude: one item, one orb, no refunds. on slam the orb
-// dives into the game and only the corrupted upgrade remains, glowing.
+// dives into the game and it is a genuine coin toss: the upgrade remains, or
+// the prize evaporates and re-enters the pool for another shot at glory.
 function maybeShowVaal(round, goNext) {
   const V = CONFIG.vaal || {};
   const oldName = round.prize.name;
   $("vaalBg").src = "assets/atziribackground.jpg";
   $("vaalAsk").textContent = V.ask || "Vall or no balls";
   $("vaalAsk").style.visibility = "";
+  $("vaalAsk").classList.remove("bad");
+  $("vaalPrize").classList.remove("poofed");
   const orbImg = $("vaalOrbImg");
   orbImg.src = "assets/vaalorb.webp";
   orbImg.style.transition = ""; orbImg.style.transform = ""; orbImg.style.opacity = "1"; orbImg.style.display = "";
@@ -998,6 +1016,7 @@ function maybeShowVaal(round, goNext) {
   $("vaalBtn").onclick = () => {
     if (!slammed) {
       slammed = true;
+      const lucky = Math.random() < 0.5; // a real coin toss, atziri does not negotiate
       beep(180, 0.3, "sawtooth", 0.12); beep(90, 0.5, "sawtooth", 0.12, 0.18); // corruption sting
       // the orb dives into the game, measured so it lands dead center
       const pr = $("vaalPrize").getBoundingClientRect();
@@ -1007,17 +1026,30 @@ function maybeShowVaal(round, goNext) {
                                (pr.top + pr.height / 2 - (or.top + or.height / 2)) + "px) scale(.55)";
       orbImg.style.opacity = "0";
       setTimeout(() => {
-        orbImg.style.display = "none"; // only the upgraded game remains
-        round.prize.name = round.upgrade.name;
-        round.prize.vaaled = true;
-        drawPrize();
-        // the reveal is a triumph, not a funeral
-        jingle(); beep(1319, 0.35, "triangle", 0.13, 0.4);
-        $("vaalAsk").style.visibility = "hidden";
-        Array.from($("inv").querySelectorAll(".nm")).forEach((n) => { if (n.textContent === oldName) n.textContent = round.prize.name; });
+        orbImg.style.display = "none"; // the orb is spent either way
+        if (lucky) {
+          round.prize.name = round.upgrade.name;
+          round.prize.vaaled = true;
+          drawPrize();
+          // the reveal is a triumph, not a funeral
+          jingle(); beep(1319, 0.35, "triangle", 0.13, 0.4);
+          $("vaalAsk").style.visibility = "hidden";
+          Array.from($("inv").querySelectorAll(".nm")).forEach((n) => { if (n.textContent === oldName) n.textContent = round.prize.name; });
+        } else {
+          // bricked. the prize evaporates and returns to the pool for another run
+          $("vaalPrize").classList.add("poofed");
+          beep(330, 0.15, "square", 0.12); beep(247, 0.2, "square", 0.12, 0.15); beep(160, 0.45, "sawtooth", 0.12, 0.35);
+          $("vaalAsk").textContent = V.brick || "the vaal took it. the pool will provide.";
+          $("vaalAsk").classList.add("bad");
+          const wk = wonKeys.indexOf(round);
+          if (wk >= 0) wonKeys.splice(wk, 1); // he does not have it anymore
+          Array.from($("inv").querySelectorAll(".invItem")).forEach((it) => { if (it.querySelector(".nm").textContent === oldName) it.remove(); });
+          requeueVaalRound(round); // same crate, same interlude, later in the shuffle
+        }
         $("vaalBtn").textContent = "CONTINUE";
       }, 620);
     } else {
+      $("vaalAsk").classList.remove("bad");
       beep(680, 0.09, "square", 0.1);
       $("vaal").classList.add("hidden");
       goNext();
@@ -1314,8 +1346,9 @@ function artEl(item) {
 // the drama slot right before it, and prizes already won never come back.
 function dropPool(excludeNames) {
   const ex = new Set(excludeNames || []);
-  const prizes = CONFIG.rounds.map((r) => r.prize).filter((p) => !ex.has(p.name));
-  const nears = CONFIG.rounds.map((r) => r.nearMiss).filter((n) => n && !ex.has(n.name));
+  // dedupe by name: a requeued vaal round exists twice in CONFIG.rounds
+  const prizes = [...new Map(CONFIG.rounds.map((r) => [r.prize.name, r.prize])).values()].filter((p) => !ex.has(p.name));
+  const nears = [...new Map(CONFIG.rounds.filter((r) => r.nearMiss).map((r) => [r.nearMiss.name, r.nearMiss])).values()].filter((n) => !ex.has(n.name));
   return shuffle([...CONFIG.jokeItems, ...nears, ...prizes]);
 }
 // what stays out of a given round's fillers: everything won so far,
