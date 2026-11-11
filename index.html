@@ -1626,9 +1626,9 @@ function spin() {
   for (let k = 0; k < prizeIdx + 9; k++) {
     let it;
     if (k === prizeIdx) it = r.prize;                                  // the one and only copy
-    else if (k === prizeIdx + side) it = r.nearMiss;                   // the almost, on the landing border
-    else if (k === prizeIdx + 2 * side) it = pickTension("pink", "red"); // extra fake tension
-    else if (k === prizeIdx + 3 * side) it = pickTension("red", "pink");
+    else if (k === prizeIdx - side) it = r.nearMiss;                   // the almost, on the landing border
+    else if (k === prizeIdx - 2 * side) it = pickTension("pink", "red"); // extra fake tension
+    else if (k === prizeIdx - 3 * side) it = pickTension("red", "pink");
     else it = pickFiller();
     seq.push(it);
     remember(it);
