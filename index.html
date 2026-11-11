@@ -84,12 +84,12 @@
   #friends { background:radial-gradient(900px 500px at 50% 20%, #1a2433 0%, #0b0d12 65%); z-index:55; cursor:pointer; }
   #friendsTitle { font-family:Impact,"Arial Black",sans-serif; color:#ffcf3f; letter-spacing:4px; font-size:clamp(22px,4vw,34px); }
   #friendsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
-  #friendsGrid { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; margin-top:34px; max-width:900px; }
-  .friendCard { width:150px; text-align:center; }
+  #friendsGrid { display:flex; flex-wrap:wrap; gap:22px; justify-content:center; margin-top:34px; max-width:1050px; }
+  .friendCard { width:180px; text-align:center; }
   .friendCard .art { font-size:44px; line-height:1; }
   .friendCard .art.pic {
-    width:100%; height:96px; border-radius:10px; border:2px solid #2a3140;
-    background-size:cover; background-position:center; background-repeat:no-repeat;
+    width:100%; height:210px; border-radius:12px; border:2px solid #2a3140;
+    background-size:cover; background-position:center top; background-repeat:no-repeat;
     box-shadow:0 6px 18px rgba(0,0,0,.5);
   }
   .friendName {
@@ -231,7 +231,7 @@
   }
   #tujenAsk { color:#f0d9a8; font-size:22px; font-weight:800; letter-spacing:1px; }
   #tujenLine { color:#9a8a68; font-size:13.5px; margin-top:10px; font-style:italic; }
-  #tujenBtns { display:flex; gap:18px; margin-top:30px; }
+  #tujenBtns { display:flex; gap:18px; margin-top:80px; }
   #tujenBtns button {
     padding:14px 28px; font-size:15px; font-weight:800; letter-spacing:1px;
     border-radius:10px; cursor:pointer; color:#fff;
@@ -1002,8 +1002,21 @@ function artEl(item) {
   return a;
 }
 
-// every prize joins the drop pool of every crate. realism first, one big pool.
-function dropPool() { return shuffle([...CONFIG.jokeItems, ...CONFIG.rounds.map((r) => r.prize)]); }
+// not-yet-won prizes join the drop pool of every crate, realism first.
+// the current round's prize stays out of the filler reel (it lands exactly once,
+// at the marker), and prizes already won never come back.
+function dropPool(excludeNames) {
+  const ex = new Set(excludeNames || []);
+  const prizes = CONFIG.rounds.map((r) => r.prize).filter((p) => !ex.has(p.name));
+  return shuffle([...CONFIG.jokeItems, ...prizes]);
+}
+// prizes to keep out of a given round's fillers: everything won so far plus this one
+function roundExclusions(i) {
+  return Array.from(new Set([
+    ...wonKeys.map((rk) => rk.prize.name),
+    CONFIG.rounds[i].prize.name,
+  ]));
+}
 
 function makeCard(item) {
   const d = document.createElement("div");
@@ -1021,19 +1034,19 @@ function loadRound(i) {
   $("caseTitle").textContent = r.caseName;
   $("caseNote").textContent = r.caseNote;
 
-  // strip preview: the full drop pool, jokes plus every real prize
+  // strip preview: the round's real drop pool, jokes plus prizes still in play
   stripEl.innerHTML = "";
   const w = winEl.clientWidth;
   const visible = Math.ceil(w / ITEM_W) + 4;
-  const pool = dropPool();
+  const pool = dropPool(roundExclusions(i));
   const seq = [];
   for (let k = 0; k < visible; k++) seq.push(pool[k % pool.length]);
   seq.forEach(it => stripEl.appendChild(makeCard(it)));
   stripEl.style.transform = "translateX(" + (w / 2 - 58) + "px)";
 
-  // "can drop" chips: everything listed really can drop
+  // "can drop" chips: everything listed really can drop in this crate
   const chips = $("dropChips"); chips.innerHTML = "";
-  dropPool().forEach(it => {
+  dropPool(roundExclusions(i)).forEach(it => {
     const c = document.createElement("span");
     c.className = "chip"; c.dataset.tier = it.tier || "blue";
     const b = document.createElement("b"); b.textContent = it.emoji + " " + it.name;
@@ -1056,19 +1069,43 @@ function spin() {
   const pre = Math.ceil(w / 2 / ITEM_W) + 3; // filler cards before the landing zone
   const prizeIdx = pre + r.landAt;
 
-  // build the strip from the full pool: filler, filler, ... nearMiss, PRIZE, a few filler
+  // build the strip: filler, filler, ... nearMiss, PRIZE, a few fillers.
+  // nothing repeats inside any visible stretch of 8 cards, no twins side by side,
+  // and the only copy of the prize on the reel is the one that lands on the marker.
   stripEl.innerHTML = "";
   const cards = [];
-  const fillers = dropPool();
+  const fillers = dropPool(roundExclusions(roundIdx));
+  let poolCursor = 0;
+  const WINDOW = 8;
+  const recent = []; // names used in the last WINDOW-1 slots
+  const allowed = (item) => recent.indexOf(item.name) === -1;
+  const remember = (item) => {
+    recent.push(item.name);
+    if (recent.length > WINDOW - 1) recent.shift();
+  };
+  function pickFiller() {
+    for (let tries = 0; tries < fillers.length; tries++) {
+      const it = fillers[poolCursor++ % fillers.length];
+      if (allowed(it)) return it;
+    }
+    return fillers[0]; // pool is far bigger than the window, never reached
+  }
+  function pickTension(a, b) {
+    const pool = CONFIG.jokeItems.filter((j) => (j.tier === a || j.tier === b) && allowed(j));
+    return pool[Math.floor(Math.random() * pool.length)] || randomTier(a, b);
+  }
+  const seq = [];
   for (let k = 0; k < prizeIdx + 9; k++) {
     let it;
-    if (k === prizeIdx) it = r.prize;
-    else if (k === prizeIdx - 1) it = r.nearMiss;               // the almost
-    else if (k === prizeIdx - 2) it = randomTier("pink", "red"); // extra fake tension
-    else if (k === prizeIdx - 3) it = randomTier("red", "pink");
-    else it = fillers[k % fillers.length];
-    const el = makeCard(it); cards.push(el); stripEl.appendChild(el);
+    if (k === prizeIdx) it = r.prize;                             // the one and only copy
+    else if (k === prizeIdx - 1) it = r.nearMiss;                 // the almost
+    else if (k === prizeIdx - 2) it = pickTension("pink", "red"); // extra fake tension
+    else if (k === prizeIdx - 3) it = pickTension("red", "pink");
+    else it = pickFiller();
+    seq.push(it);
+    remember(it);
   }
+  seq.forEach((it) => { const el = makeCard(it); cards.push(el); stripEl.appendChild(el); });
 
   const tx0 = w / 2 - 58 - pre * ITEM_W;              // start: card 'pre' centered, window fully covered
   const creep = 34 + Math.random() * 16;              // px short of dead center, on the near miss side
