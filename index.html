@@ -108,7 +108,7 @@
     animation:invPop .45s cubic-bezier(.2,2,.4,1), cardsweep 2.4s linear infinite;
   }
   @keyframes invPop { from { transform:scale(.3) rotate(-8deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
-  @media (max-width: 980px) { #inv { display:none; } #game { padding-left:0; } }
+  @media (max-width: 980px) { #inv { display:none; } #drops { display:none; } #game { padding-left:0; } }
   #topbar {
     position:absolute; top:0; left:0; right:0; height:56px;
     display:flex; align-items:center; justify-content:space-between;
@@ -316,7 +316,7 @@
 <div id="gate" class="screen">
   <div id="gateBox">
     <div id="gateTitle">🎂 BIRTHDAY CRATES</div>
-    <div id="gateSub">members only. prove you know the secrect word.</div>
+    <div id="gateSub">members only. prove you know the secret word.</div>
     <input id="gatePass" type="password" placeholder="password" autocomplete="off">
     <button id="gateBtn">ENTER</button>
     <div id="gateErr"></div>
@@ -660,10 +660,9 @@ const CONFIG = {
   ],
 
   finalStats: [
-    ["BALANCE",      "0.00 EUR"],
     ["SELF CONTROL", "not found"],
     ["AGE",          "+1 (too high)"],
-    ["REAL ODDS",    "100% rigged"],
+    ["REAL ODDS",    "100% Pedro Rua"],
   ],
   signature: "happy birthday guccio. from your favorite enabler.",
 
