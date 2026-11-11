@@ -309,7 +309,9 @@
   #vaalPrize { display:flex; flex-direction:column; align-items:center; gap:14px; }
   #vaalPrize .art { font-size:56px; line-height:1; }
   #vaalPrize .art.pic { width:280px; height:130px; background-size:contain; background-position:center; background-repeat:no-repeat; }
-  #vaalPrize .nm { font-size:17px; font-weight:800; color:#e6e9f0; line-height:1.3; max-width:340px; }
+  #vaalPrize .nm { font-size:17px; font-weight:800; color:#e6e9f0; line-height:1.3; max-width:360px; }
+  #vaalPrize .nm.vaaled { font-size:21px; }
+  #vaalPrize .nm.vaaled b { font-weight:900; font-size:1.18em; text-shadow:0 0 20px rgba(255,92,138,.95); }
   .nm.vaaled { color:#ff5c8a !important; text-shadow:0 0 14px rgba(255,92,138,.65); }
   #vaalPrize.corrupted .art { animation:corruptpulse .8s ease; }
   @keyframes corruptpulse {
@@ -976,7 +978,14 @@ function maybeShowVaal(round, goNext) {
   function drawPrize() {
     const box = $("vaalPrize");
     const n = document.createElement("div"); n.className = "nm" + (round.prize.vaaled ? " vaaled" : "");
-    n.textContent = round.prize.name;
+    if (round.prize.vaaled && round.upgrade.name.indexOf(oldName) === 0 && round.upgrade.name.length > oldName.length) {
+      // the part the corruption added gets the spotlight
+      const b = document.createElement("b");
+      b.textContent = round.upgrade.name.slice(oldName.length).trim();
+      n.append(document.createTextNode(oldName + " "), b);
+    } else {
+      n.textContent = round.prize.name;
+    }
     box.replaceChildren(artEl(round.prize), n);
     box.classList.toggle("corrupted", !!round.prize.vaaled);
   }
@@ -1002,6 +1011,8 @@ function maybeShowVaal(round, goNext) {
         round.prize.name = round.upgrade.name;
         round.prize.vaaled = true;
         drawPrize();
+        // the reveal is a triumph, not a funeral
+        jingle(); beep(1319, 0.35, "triangle", 0.13, 0.4);
         $("vaalAsk").style.visibility = "hidden";
         Array.from($("inv").querySelectorAll(".nm")).forEach((n) => { if (n.textContent === oldName) n.textContent = round.prize.name; });
         $("vaalBtn").textContent = "CONTINUE";
