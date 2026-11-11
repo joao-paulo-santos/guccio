@@ -1578,11 +1578,10 @@ function loadRound(i) {
 }
 
 function easeOut(t) {
-  // cubic launch that stiffens into a slow-motion crawl: the exponent grows
-  // through the spin (3 towards 5), so the final approach over the near miss
-  // and across into the prize takes the longest, same total spin length
-  const k = 3 + 9.8 * t * t * (3 - 2 * t);
-  return 1 - Math.pow(1 - t, k);
+  // the classic single curve, gently retuned: exponent 3.4 gives the last
+  // couple of cards a touch more airtime than the old cubic without changing
+  // the character of the spin
+  return 1 - Math.pow(1 - t, 3.4);
 }
 
 function spin() {
@@ -1619,13 +1618,17 @@ function spin() {
     const pool = CONFIG.jokeItems.filter((j) => (j.tier === a || j.tier === b) && allowed(j));
     return pool[Math.floor(Math.random() * pool.length)] || randomTier(a, b);
   }
+  // the landing is a coin toss: barely onto the prize from one side, or hung
+  // right at the far border like it almost went over. the near miss always
+  // sits against whichever border the marker ends up kissing.
+  const side = Math.random() < 0.5 ? -1 : 1; // -1: barely made it, +1: almost went over
   const seq = [];
   for (let k = 0; k < prizeIdx + 9; k++) {
     let it;
-    if (k === prizeIdx) it = r.prize;                             // the one and only copy
-    else if (k === prizeIdx - 1) it = r.nearMiss;                 // the almost
-    else if (k === prizeIdx - 2) it = pickTension("pink", "red"); // extra fake tension
-    else if (k === prizeIdx - 3) it = pickTension("red", "pink");
+    if (k === prizeIdx) it = r.prize;                                  // the one and only copy
+    else if (k === prizeIdx + side) it = r.nearMiss;                   // the almost, on the landing border
+    else if (k === prizeIdx + 2 * side) it = pickTension("pink", "red"); // extra fake tension
+    else if (k === prizeIdx + 3 * side) it = pickTension("red", "pink");
     else it = pickFiller();
     seq.push(it);
     remember(it);
@@ -1633,9 +1636,10 @@ function spin() {
   seq.forEach((it) => { const el = makeCard(it); cards.push(el); stripEl.appendChild(el); });
 
   const tx0 = w / 2 - HALF_W - pre * ITEM_W;          // start: card 'pre' centered, window fully covered
-  const creep = 40 + Math.random() * 16;              // px short of dead center, on the near miss side
-  const tx1 = w / 2 - HALF_W - prizeIdx * ITEM_W + creep; // end: marker just inside the prize, close call look
-  const dur = 8600;
+  const creep = side * (42 + Math.random() * 14);     // px off dead center, towards the chosen border
+  const tx1 = w / 2 - HALF_W - prizeIdx * ITEM_W + creep; // end: marker 2-14px inside the prize's edge
+  const dur = 10000;
+
   const t0 = performance.now();
   let lastIdx = -1, lastTick = 0;
 
