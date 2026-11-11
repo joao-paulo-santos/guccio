@@ -1581,7 +1581,7 @@ function easeOut(t) {
   // cubic launch that stiffens into a slow-motion crawl: the exponent grows
   // through the spin (3 towards 5), so the final approach over the near miss
   // and across into the prize takes the longest, same total spin length
-  const k = 3 + 2 * t * t * (3 - 2 * t);
+  const k = 3 + 9.8 * t * t * (3 - 2 * t);
   return 1 - Math.pow(1 - t, k);
 }
 
