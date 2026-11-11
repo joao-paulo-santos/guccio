@@ -978,6 +978,8 @@ const CONFIG = {
     //              "don't get too eager" when the take rewards trap is clicked
     trialGreet: "https://cdn.poedb.tw/audio/dialogue/npc/trialmasterhideout/tri_72a_01.ogg",
     trialEager: "https://cdn.poedb.tw/audio/dialogue/npc/trialmasterhideout/tri_71d_01.ogg",
+    // the diabetic call, loops until he picks up
+    callRing: "https://www.myinstants.com/media/sounds/a-phone-ringing.mp3",
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
   },
@@ -1134,19 +1136,31 @@ function maybeShowCall(goNext) {
 
   let phase = "ringing", value = 15;
   let drain = null, urgencyTimer = null;
-  const ring = setInterval(() => { // proper loud phone bell, two tone trill
-    for (let i = 0; i < 6; i++) { beep(920, 0.1, "square", 0.16, i * 0.15); beep(1250, 0.1, "square", 0.12, i * 0.15 + 0.04); }
-  }, 2000);
+  let ring = null;
+  const ringSrc = CONFIG.sounds && CONFIG.sounds.callRing;
+  if (ringSrc) {
+    // real ringtone, looping seamless until pickup. registered in poePlayers
+    // so the SOUND toggle can silence it too.
+    ring = new Audio(ringSrc);
+    ring.loop = true;
+    poePlayers.callRing = ring;
+    try { ring.play().catch(() => {}); } catch (e) {}
+  } else {
+    ring = setInterval(() => { // synth fallback bell if the url is ever removed
+      for (let i = 0; i < 6; i++) { beep(920, 0.1, "square", 0.16, i * 0.15); beep(1250, 0.1, "square", 0.12, i * 0.15 + 0.04); }
+    }, 2000);
+  }
 
-  function heart() { // audible heartbeat that accelerates as things get worse
-    beep(140, 0.14, "sine", 0.11); beep(95, 0.12, "sine", 0.09, 0.16);
+  function heart() { // loud heartbeat that accelerates as things get worse
+    beep(140, 0.14, "sine", 0.24); beep(95, 0.12, "sine", 0.2, 0.16);
     urgencyTimer = setTimeout(heart, 340 + (value / 100) * 560); // 0.9s calm, 0.34s panic
   }
 
   btn.onclick = () => {
     if (phase === "ringing") {
       phase = "pumping";
-      clearInterval(ring);
+      if (ring && ring.pause) { try { ring.pause(); } catch (e) {} } // answered, ring stops
+      else clearInterval(ring);
       patient.textContent = "😰";
       sub.textContent = C.sub || "patient stability critical. you are the only agent available.";
       $("callSyringe").style.visibility = "";
