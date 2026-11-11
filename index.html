@@ -1148,7 +1148,7 @@ function maybeShowCall(goNext) {
   $("call").classList.remove("hidden");
 
   let phase = "ringing", value = 15;
-  let drain = null, urgencyTimer = null, pumpAudio = null;
+  let drain = null, urgencyTimer = null;
   // the face tracks the vitals: worse, worried, better, fine, saved
   function patientEmoji(v) {
     if (v >= 100) return "😌";
@@ -1158,15 +1158,14 @@ function maybeShowCall(goNext) {
     if (v >= 10) return "😖";
     return "🥴";
   }
-  // maven has opinions about every injection, but she finishes her thoughts:
-  // a new one only starts when the previous clip ended
+  // maven reacts to every injection. her clips carry trailing silence, so
+  // waiting for "the end" would eat pumps: these stack freely instead
   function playPump() {
     if (!sfxOn) return;
     const list = (CONFIG.sounds && CONFIG.sounds.callPumps) || [];
     if (!list.length) { beep(760 + Math.random() * 120, 0.05, "square", 0.06); return; }
-    if (pumpAudio && !pumpAudio.paused && !pumpAudio.ended) return;
-    pumpAudio = new Audio(list[Math.floor(Math.random() * list.length)]);
-    try { pumpAudio.play().catch(() => {}); } catch (e) {}
+    const a = new Audio(list[Math.floor(Math.random() * list.length)]);
+    try { a.play().catch(() => {}); } catch (e) {}
   }
   let ring = null;
   const ringSrc = CONFIG.sounds && CONFIG.sounds.callRing;
