@@ -375,6 +375,67 @@
   #mavenBtn:hover { filter:brightness(1.1); }
   #mavenFine { margin-top:18px; color:#4a5162; font-size:11px; }
 
+  /* ============ BLIGHT PUMP DEFENSE (EXPERIMENTAL) ============ */
+  #blight { background:radial-gradient(circle at 50% 35%, #14210f 0%, #0b1409 45%, #060a05 100%); z-index:60; }
+  #blightBox { text-align:center; width:min(94vw,820px); }
+  #blightTitle {
+    font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#9fd45e;
+    font-size:clamp(20px,3.6vw,30px); text-shadow:0 0 22px rgba(120,200,60,.45);
+  }
+  #blightSub { color:#8b93a3; font-size:13px; margin-top:8px; min-height:1.4em; }
+  #blightCount { color:#5b6275; font-size:11px; letter-spacing:3px; margin-top:8px; }
+  #blightField { position:relative; width:100%; aspect-ratio:900/520; margin:8px auto 0; }
+  #blightSvg { position:absolute; inset:0; width:100%; height:100%; }
+  #blightLanes path {
+    fill:none; stroke:#6c3fa0; stroke-width:6; stroke-dasharray:10 9; stroke-linecap:round;
+    opacity:.7; filter:drop-shadow(0 0 6px rgba(108,63,160,.55));
+  }
+  #blightPortals circle {
+    fill:#2a0f45; stroke:#a86bff; stroke-width:3;
+    animation:portal 1.7s ease infinite alternate;
+  }
+  @keyframes portal { to { fill:#43196e; stroke-width:5; } }
+  #blightPump { filter:drop-shadow(0 0 14px rgba(255,217,74,.35)); }
+  #blightPump .gauge { animation:gauge 1.4s ease infinite alternate; transform-origin:0 0; }
+  @keyframes gauge { to { fill:#ffef9e; } }
+  #blightPump.alarmed { animation:pumpshake .3s ease infinite alternate; }
+  @keyframes pumpshake { to { transform:translate(450px,300px) rotate(1.4deg); } }
+  #blightHearts {
+    position:absolute; left:50%; top:40%; transform:translateX(-50%);
+    font-size:16px; letter-spacing:4px; pointer-events:none;
+  }
+  #blightHearts span { display:inline-block; }
+  #blightHearts.panic { animation:heartspanic .35s ease infinite alternate; }
+  @keyframes heartspanic { to { transform:translateX(-50%) scale(1.12); filter:hue-rotate(-40deg); } }
+  #blightMobs { position:absolute; inset:0; pointer-events:none; }
+  .blightMob {
+    position:absolute; transform:translate(-50%,-50%); font-size:23px; line-height:1;
+    cursor:pointer; pointer-events:auto; user-select:none;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.65));
+    transition:left .06s linear, top .06s linear;
+    animation:mobbob 0.9s ease infinite alternate;
+  }
+  @keyframes mobbob { to { margin-top:-4px; } }
+  .blightMob.boss { font-size:44px; }
+  .blightMob.gnaw { animation:gnaw .3s ease infinite alternate; }
+  @keyframes gnaw { to { margin-left:3px; margin-top:-2px; } }
+  .blightMob.hit { animation:hitflash .12s ease; }
+  @keyframes hitflash { 40% { filter:brightness(2.4) saturate(2); } }
+  .blightPop {
+    position:absolute; transform:translate(-50%,-50%); font-size:19px;
+    pointer-events:none; animation:popfx .32s ease forwards;
+  }
+  .blightPop.big { font-size:34px; }
+  @keyframes popfx { to { transform:translate(-50%,-50%) scale(1.9); opacity:0; } }
+  #blightBtn {
+    margin-top:14px; padding:12px 34px; font-size:14px; font-weight:800; letter-spacing:2px;
+    border-radius:10px; cursor:pointer; color:#0d1a04;
+    background:linear-gradient(180deg,#c9f28a,#8ec33f); border:1px solid #6b902c; box-shadow:0 4px 0 #527020;
+    animation:btnpulse .7s ease infinite alternate;
+  }
+  #blightBtn:hover { filter:brightness(1.08); }
+  #blightFine { margin-top:14px; color:#4a5162; font-size:11px; }
+
   /* ============ VAAL / ATZIRI ============ */
   #vaal { background:#0a0709; z-index:60; overflow:hidden; }
   #vaalBg {
@@ -609,6 +670,34 @@
   </div>
 </div>
 
+<!-- ==================== BLIGHT PUMP DEFENSE (EXPERIMENTAL) ==================== -->
+<div id="blight" class="screen hidden">
+  <div id="blightBox">
+    <div id="blightTitle">PROTECT THE PUMP</div>
+    <div id="blightSub">the blight is trying to spread. pop everything that crawls.</div>
+    <div id="blightCount">PURGED 0 / 30</div>
+    <div id="blightField">
+      <svg id="blightSvg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet">
+        <g id="blightLanes"></g>
+        <g id="blightPortals"></g>
+        <g id="blightPump" transform="translate(450,300)">
+          <rect x="-40" y="34" width="16" height="26" rx="3" fill="#6b4d17"/>
+          <rect x="24" y="34" width="16" height="26" rx="3" fill="#6b4d17"/>
+          <rect x="-36" y="-46" width="72" height="86" rx="10" fill="#b98a12" stroke="#8a650b" stroke-width="3"/>
+          <rect x="-36" y="-46" width="72" height="20" rx="10" fill="#8a650b"/>
+          <rect x="-14" y="-58" width="28" height="14" rx="4" fill="#8a650b"/>
+          <circle class="gauge" cx="0" cy="0" r="13" fill="#ffd94a" stroke="#8a650b" stroke-width="3"/>
+          <rect x="30" y="-6" width="14" height="10" rx="3" fill="#8a650b"/>
+        </g>
+      </svg>
+      <div id="blightHearts"><span>❤️</span><span>❤️</span><span>❤️</span></div>
+      <div id="blightMobs"></div>
+    </div>
+    <button id="blightBtn" class="hidden">CONTINUE</button>
+    <div id="blightFine">cassia has never lost a pump. she is not about to start with you.</div>
+  </div>
+</div>
+
 <!-- ==================== ULTIMATUM INTERLUDE ==================== -->
 <div id="trial" class="screen hidden">
   <img id="trialBg" alt="" draggable="false">
@@ -729,7 +818,8 @@ const CONFIG = {
   //   poe art:     https://cdn.poedb.tw/image/Art/2DItems/Currency/CurrencyDuplicate.webp
   //
   // one round per gift. the strip always lands on the prize.
-  // order knobs: finale: true pins a round last. after: "Prize Name" (or a list)
+  // order knobs: finale: true pins a round last, preFinale: true right before it.
+  // after: "Prize Name" (or a list)
   // makes a round wait for its dependencies. everything else shuffles per reload.
   // nearMiss is the item that creeps past the marker RIGHT before the prize.
   rounds: [
@@ -889,11 +979,12 @@ const CONFIG = {
     {
       caseName: "THE SACK RACE CRATE",
       caseNote: "three losses in a row and the board calls an emergency meeting",
+      preFinale: true, // the whole squad chipped in, it plays right before the finale
       prize: {
         name: "Football Manager 27",
         sub:  "steam key",
         emoji:"📋",
-        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4530370/header.jpg",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4530370/3d06aef381c925bb6c091f13be44dd294b205a72/capsule_231x87.jpg",
         tier: "gold",
         flavor: "900 hours guaranteed. rage quit by february. you will come back by march.",
         // win sound: the eternal soundtrack of every stadium
@@ -953,7 +1044,8 @@ const CONFIG = {
     brick: "the vaal took it.",
   },
 
-  // the diabetic call interlude, second of the show.
+  // the diabetic call interlude. chained right after the trialmaster's
+  // accepted trial, first interlude only.
   // guccio's day job crashes the birthday: stability drains, spam the pump, save the patient.
   call: {
     title: "Incoming call FROM A DIABETIC!!!!!",
@@ -978,6 +1070,28 @@ const CONFIG = {
     failSub: "wrong. she noticed. she laughed.",
     winSub: "a delightful show. she is letting you live.",
     restart: "START OVER",
+    cont: "CONTINUE",
+  },
+
+  // EXPERIMENTAL, might be removed: cassia's blight defense, second interlude.
+  // portals vomit monsters down curved lanes, every click pops one, bosses
+  // take five. the crawl slows logarithmically near the pump so it cannot
+  // fall, but the three hearts up top insist otherwise. speed scales all
+  // pacing at once (raise to rush the whole show, the smoke test uses 50).
+  blight: {
+    title: "PROTECT THE PUMP",
+    sub: "the blight is trying to spread. pop everything that crawls.",
+    monsters: 30,
+    bosses: 3,        // split across random lanes, can gang up on one
+    bossHp: 5,
+    spawnEvery: 950,  // ms between monster spawns
+    bossDelay: 900,   // breath after the wave before bosses surface
+    bossStagger: 800, // ms between boss spawns
+    mobSpeed: 0.0026, // lane progress per 60ms tick at full crawl
+    speed: 1,
+    purgeLabel: "PURGED",
+    bossLabel: "BOSSES FELLED",
+    winSub: "purified. all of it. she is taking full credit.",
     cont: "CONTINUE",
   },
 
@@ -1064,7 +1178,7 @@ const CONFIG = {
     ["AGE",          "+1 (too high)"],
     ["REAL ODDS",    "100% Pedro Rua"],
   ],
-  signature: "happy birthday guccio. from your favorite enabler.",
+  signature: "happy birthday guccio. from your favorite enablers.",
 
   // password gate. the page refuses to start without it, and the same password
   // encrypts the steam keys, so anyone reading the repo finds nothing usable.
@@ -1139,6 +1253,33 @@ const CONFIG = {
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_02_a.ogg", // most entertaining. take the prize.
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_01_a.ogg", // the victorious plaything receives a reward.
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_05_a.ogg", // unexpected, but not unwelcome.
+    ],
+    // sister cassia's blight defense. same voice bank rules: random variant,
+    // no repeats back to back. pop barks fire on maybe a sixth of the pops so
+    // she stays chatty without talking over herself
+    blightGreet: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_09.ogg",    // by his flame, the blight is reacting...
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_29_2a.ogg", // the blight is trying to spread!
+    ],
+    blightBoss: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_22.ogg",    // you've done well, my little apostle. moment of truth.
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_29_1a.ogg", // it's put out new mycelium! new roots!
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_27_3a.ogg", // you must be cleansed!
+    ],
+    blightPop: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_27_1a.ogg", // filth!
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_27_2a.ogg", // vile little...
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_27_4a.ogg", // disgusting!
+    ],
+    blightPump: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_10.ogg",    // protect the pump, exile.
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_11.ogg",    // for the love of innocence, protect the pump!
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_30_1a.ogg", // those fiends are getting too close to my pump.
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_30_3a.ogg", // do not let them reach the purification pump!
+    ],
+    blightWin: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_12.ogg",    // success! god did it. you were of some help.
+      "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_24.ogg",    // we destroyed the source of the blight!
     ],
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
@@ -1494,6 +1635,187 @@ function maybeShowMaven(goNext) {
   startWave();
 }
 
+// EXPERIMENTAL, might be removed: cassia's blight defense. portals spawn
+// monsters down curved lanes toward her pump, balloon-pop style: one click
+// per monster, five per boss. the crawl slows the closer they get, so the
+// pump cannot actually fall. the hearts are theater. she knows.
+function maybeShowBlight(goNext) {
+  const B = CONFIG.blight || {};
+  const speed = B.speed || 1;
+  const total = B.monsters || 30;
+  const bossCount = B.bosses || 3;
+  const bossHp = B.bossHp || 5;
+  const W = 900, H = 520, PX = 450, PY = 300;
+  const screen = $("blight"), mobsEl = $("blightMobs"), countEl = $("blightCount");
+  $("blightTitle").textContent = B.title || "PROTECT THE PUMP";
+  $("blightSub").textContent = B.sub || "pop everything that crawls.";
+  mobsEl.innerHTML = "";
+  $("blightLanes").innerHTML = "";
+  $("blightPortals").innerHTML = "";
+  $("blightBtn").classList.add("hidden");
+  $("blightPump").classList.remove("alarmed");
+  gameEl.classList.add("hidden");
+  finalEl.classList.add("hidden");
+  screen.classList.remove("hidden");
+  playPoe("blightGreet");
+
+  // 2 to 4 lanes, each a random bowed bezier from an edge portal to the pump.
+  // sampled into plain coordinate arrays so nothing depends on svg geometry apis
+  const laneN = Math.min(4, Math.max(2, 2 + Math.floor(Math.random() * 3)));
+  const pool = shuffle([[90, 80], [810, 80], [90, 440], [810, 440]]).slice(0, laneN);
+  const svgNS = "http://www.w3.org/2000/svg";
+  const lanes = pool.map((p) => {
+    const dx = PX - p[0], dy = PY - p[1], d = Math.hypot(dx, dy);
+    const nx = -dy / d, ny = dx / d;
+    const bow = (60 + Math.random() * 130) * (Math.random() < 0.5 ? -1 : 1);
+    const ex = PX - dx / d * 70, ey = PY - dy / d * 70; // stop short of the pump
+    const c1 = [p[0] + dx * 0.3 + nx * bow, p[1] + dy * 0.3 + ny * bow];
+    const c2 = [p[0] + dx * 0.65 + nx * bow * 0.4, p[1] + dy * 0.65 + ny * bow * 0.4];
+    const pts = [];
+    for (let k = 0; k <= 100; k++) {
+      const t = k / 100, u = 1 - t;
+      pts.push([u*u*u*p[0] + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t*t*t*ex,
+                u*u*u*p[1] + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t*t*t*ey]);
+    }
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", "M" + p[0] + "," + p[1] + " C" + c1[0] + "," + c1[1] + " " + c2[0] + "," + c2[1] + " " + ex + "," + ey);
+    $("blightLanes").appendChild(path);
+    const ring = document.createElementNS(svgNS, "circle");
+    ring.setAttribute("cx", p[0]); ring.setAttribute("cy", p[1]); ring.setAttribute("r", 15);
+    ring.setAttribute("class", "portal");
+    $("blightPortals").appendChild(ring);
+    return pts;
+  });
+
+  // the 30 split across lanes, spawn order shuffled between them
+  const queue = [];
+  lanes.forEach((_, i) => {
+    const n = Math.floor(total / laneN) + (i < total % laneN ? 1 : 0);
+    for (let k = 0; k < n; k++) queue.push(i);
+  });
+  shuffle(queue);
+  const MOBS = ["🐀", "🕷️", "🦇", "🧟", "🐸", "🐛"];
+  const spawned = [], el = [];
+  let popped = 0, bossesOut = 0, bossesFelled = 0, lastPumpLine = 0;
+  screen.dataset.lanes = String(laneN);
+  screen.dataset.popped = "0";
+  screen.dataset.phase = "wave";
+
+  function sayCount() {
+    if (screen.dataset.phase === "wave")
+      countEl.textContent = (B.purgeLabel || "PURGED") + " " + popped + " / " + total;
+    else if (screen.dataset.phase === "bosses")
+      countEl.textContent = (B.bossLabel || "BOSSES FELLED") + " " + bossesFelled + " / " + bossCount;
+    else countEl.textContent = "PURIFIED. ALL OF IT.";
+  }
+  function popFx(x, y, big) {
+    const fx = document.createElement("div");
+    fx.className = "blightPop" + (big ? " big" : "");
+    fx.textContent = big ? "💥" : "✨";
+    fx.style.left = (x / W * 100) + "%"; fx.style.top = (y / H * 100) + "%";
+    mobsEl.appendChild(fx);
+    setTimeout(() => fx.remove(), 340);
+  }
+  function spawn(lane, boss) {
+    const m = { lane, boss, hp: boss ? bossHp : 1, t: 0, dead: false, gnawing: false };
+    m.el = document.createElement("div");
+    m.el.className = "blightMob" + (boss ? " boss" : "");
+    m.el.textContent = boss ? "👹" : MOBS[Math.floor(Math.random() * MOBS.length)];
+    m.el.dataset.lane = String(lane);
+    m.el.addEventListener("click", () => {
+      if (m.dead || screen.dataset.phase === "won") return;
+      if (m.hp > 1) { // boss takes it on the chin
+        m.hp--;
+        beep(150, 0.08, "square", 0.12);
+        m.el.classList.remove("hit"); void m.el.offsetWidth; m.el.classList.add("hit");
+        return;
+      }
+      m.dead = true;
+      popped++;
+      if (m.gnawing && !spawned.some((o) => !o.dead && o.gnawing)) $("blightPump").classList.remove("alarmed");
+      if (m.boss) { bossesFelled++; popFx(m.x, m.y, true); beep(110, 0.2, "sawtooth", 0.14); beep(70, 0.24, "sawtooth", 0.1, 0.05); }
+      else { popFx(m.x, m.y, false); beep(640 + Math.random() * 240, 0.05, "square", 0.09); beep(190, 0.07, "square", 0.06, 0.02); }
+      if (!m.boss && Math.random() < 0.17) playPoe("blightPop");
+      m.el.remove();
+      screen.dataset.popped = String(popped);
+      sayCount();
+      if (screen.dataset.phase === "wave" && popped >= total) {
+        screen.dataset.phase = "crowning";
+        setTimeout(spawnBosses, (B.bossDelay || 900) / speed);
+      } else if (screen.dataset.phase === "bosses" && bossesFelled >= bossCount) {
+        win();
+      }
+    });
+    const p0 = lanes[lane][0];
+    m.x = p0[0]; m.y = p0[1];
+    m.el.style.left = (m.x / W * 100) + "%"; m.el.style.top = (m.y / H * 100) + "%";
+    mobsEl.appendChild(m.el);
+    spawned.push(m);
+  }
+  function spawnBosses() {
+    screen.dataset.phase = "bosses";
+    sayCount();
+    playPoe("blightBoss");
+    for (let k = 0; k < bossCount; k++) {
+      setTimeout(() => {
+        if (screen.dataset.phase === "bosses" || screen.dataset.phase === "crowning")
+          spawn(Math.floor(Math.random() * laneN), true); // any lane, gang-ups allowed
+      }, k * (B.bossStagger || 800) / speed);
+    }
+  }
+  function win() {
+    screen.dataset.phase = "won";
+    sayCount();
+    playPoe("blightWin");
+    $("blightSub").textContent = B.winSub || "purified. all of it.";
+    const btn = $("blightBtn");
+    btn.textContent = B.cont || "CONTINUE";
+    btn.classList.remove("hidden");
+    btn.onclick = () => { screen.classList.add("hidden"); goNext(); };
+  }
+
+  // the wave drips out one monster at a time
+  let qi = 0;
+  const spawnIv = setInterval(() => {
+    if (screen.classList.contains("hidden") || screen.dataset.phase === "won") { clearInterval(spawnIv); return; }
+    if (qi < queue.length) spawn(queue[qi++], false);
+    else clearInterval(spawnIv);
+  }, (B.spawnEvery || 950) / speed);
+
+  // the crawl: progress per tick scales with log of distance left, so the
+  // last stretch to the pump takes forever. they gnaw. you pop. cassia prays.
+  const tickIv = setInterval(() => {
+    if (screen.classList.contains("hidden") || screen.dataset.phase === "won") { clearInterval(tickIv); return; }
+    let anyGnaw = false;
+    for (const m of spawned) {
+      if (m.dead) continue;
+      const left = Math.max(0, 1 - m.t);
+      const slow = Math.log10(1 + 9 * left); // 1 at the portal, 0 at the pump
+      m.t = Math.min(1, m.t + (B.mobSpeed || 0.0026) * slow * speed * (m.boss ? 0.8 : 1) * 16.7);
+      const p = lanes[m.lane][Math.round(m.t * 100)];
+      m.x = p[0]; m.y = p[1];
+      m.el.style.left = (m.x / W * 100) + "%";
+      m.el.style.top = (m.y / H * 100) + "%";
+      if (m.t >= 1) {
+        anyGnaw = true;
+        if (!m.gnawing) {
+          m.gnawing = true;
+          m.el.classList.add("gnaw");
+          $("blightPump").classList.add("alarmed");
+          const hearts = $("blightHearts");
+          hearts.classList.add("panic");
+          setTimeout(() => hearts.classList.remove("panic"), 1600 / speed);
+        }
+      }
+    }
+    if (anyGnaw && Date.now() - lastPumpLine > 5000) {
+      lastPumpLine = Date.now();
+      playPoe("blightPump");
+    }
+  }, 60);
+  sayCount();
+}
+
 function maybeShowInterlude(roundIndex, goNext) {
   playPoe("tujen");
   const I = CONFIG.interlude;
@@ -1735,7 +2057,7 @@ function startFriends() {
 // ---------- strip machinery ----------
 const ITEM_W = 144; // 136px card + 8px gap, keep in sync with css if you touch sizes
 const HALF_W = 68;   // half a card, where the marker meets the strip
-let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, callDone = false, mavenDone = false;
+let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, blightDone = false, mavenDone = false;
 
 function shuffle(a) {
   a = a.slice();
@@ -1744,9 +2066,10 @@ function shuffle(a) {
 }
 
 // gift order shuffles fresh on every reload, nothing should feel scripted.
-// two knobs per round:
-//   finale: true  pinned to the very end, the friends joke needs the last word
-//   after: "Name"  (or an array of names) only plays once those prizes already did
+// three knobs per round:
+//   finale: true    pinned to the very end, the friends joke needs the last word
+//   preFinale: true pinned right before the finale, for the big group gifts
+//   after: "Name"   (or an array of names) only plays once those prizes already did
 // this rewrites CONFIG.rounds in place before anything reads it.
 (function orderRounds() {
   const byName = new Map(CONFIG.rounds.map((r) => [r.prize.name, r]));
@@ -1754,7 +2077,8 @@ function shuffle(a) {
     const d = r.after ? (Array.isArray(r.after) ? r.after : [r.after]) : [];
     return d.filter((name) => byName.has(name)); // unknown names are ignored
   };
-  const pending = CONFIG.rounds.filter((r) => !r.finale);
+  const preFinale = CONFIG.rounds.filter((r) => r.preFinale);
+  const pending = CONFIG.rounds.filter((r) => !r.finale && !r.preFinale);
   const finales = CONFIG.rounds.filter((r) => r.finale);
   const ordered = [];
   const placed = new Set();
@@ -1767,7 +2091,7 @@ function shuffle(a) {
     pending.splice(pending.indexOf(pick), 1);
   }
   CONFIG.rounds.length = 0;
-  CONFIG.rounds.push(...ordered, ...pending, ...finales);
+  CONFIG.rounds.push(...ordered, ...pending, ...preFinale, ...finales);
 })();
 
 // builds the art slot: real picture if the item has img, emoji otherwise
@@ -2024,11 +2348,12 @@ $("nextBtn").addEventListener("click", () => {
   const next = roundIdx + 1;
   if (next < CONFIG.rounds.length) {
     // interlude dispatch: atziri claims her vaal round whenever it lands,
-    // the trialmaster takes the first other one, then the diabetic call,
-    // then the maven's memory game, and tujen owns everything after that
+    // the trialmaster takes the first other one and his accepted trial chains
+    // straight into the diabetic call (first interlude only), then cassia's
+    // blight defense, then the maven's memory game, tujen owns the rest
     if (currentRound.vaal && currentRound.upgrade) maybeShowVaal(currentRound, () => loadRound(next));
-    else if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => loadRound(next)); }
-    else if (!callDone) { callDone = true; maybeShowCall(() => loadRound(next)); }
+    else if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => maybeShowCall(() => loadRound(next))); }
+    else if (!blightDone) { blightDone = true; maybeShowBlight(() => loadRound(next)); }
     else if (!mavenDone) { mavenDone = true; maybeShowMaven(() => loadRound(next)); }
     else maybeShowInterlude(next, () => loadRound(next));
   } else {
