@@ -1185,7 +1185,7 @@ const CONFIG = {
     craft: "CRAFT",
     oddsLabel: "STAKED",              // "STAKED 2: the craft yields 0 - 4"
     yieldLabel: "the craft yields",
-    cappedNote: "the grove only grows four",
+    cappedNote: "the grove gives all it has",
     winSub: "all four. the grove approves.",
     loseSub: "the craft took everything. the crates will provide again.",
     cont: "CONTINUE",
@@ -2060,8 +2060,10 @@ function maybeShowHarvest(round, goNext) {
       else if (owned.has(g.name))
         card(g, invGrid, () => { staked.add(g.name); render(); });
     });
+    // the range shows the raw double. how much the grove can really grow
+    // stays hidden, he should have no clue how many there are
     odds.textContent = (H.oddsLabel || "STAKED") + " " + staked.size + ": " +
-                       (H.yieldLabel || "the craft yields") + " 0 - " + Math.min(2 * staked.size, TOTAL);
+                       (H.yieldLabel || "the craft yields") + " 0 - " + 2 * staked.size;
     screen.dataset.owned = String(owned.size);
     screen.dataset.staked = String(staked.size);
     screen.dataset.set = games.map((g) => (owned.has(g.name) ? "1" : "0")).join("");
@@ -2135,7 +2137,7 @@ function maybeShowHarvest(round, goNext) {
       let line;
       if (roll === s) line = "the plot hands back your stake";
       else line = (H.yieldLabel || "the craft yields") + " " + drawn.length + (capped ? ". " + (H.cappedNote || "") : "");
-      result.textContent = line + ". you hold " + final + " of " + TOTAL;
+      result.textContent = line + ". you hold " + final;
       if (final === TOTAL) { render(); winAll(); return; }
       if (final === 0) { render(); loseAll(); return; }
       if (final > before) jingle(); // the plot was kind
