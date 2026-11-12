@@ -468,16 +468,18 @@
   .hvCard .nm { font-size:9px; font-weight:700; line-height:1.25; color:#e6e9f0; margin-top:6px; }
   #harvestCraft { width:340px; display:flex; flex-direction:column; align-items:center; }
   #harvestSquare {
-    width:100%; min-height:150px; border:2px dashed #4a7a33; border-radius:12px;
-    background:rgba(18,30,16,.75); display:flex; flex-wrap:wrap; gap:8px;
+    width:100%; min-height:150px; border-radius:4px;
+    border:2px solid #6e5335; box-shadow:inset 0 0 0 1px #241a10, inset 0 0 24px rgba(0,0,0,.55), 0 0 0 1px #241a10;
+    background:linear-gradient(180deg, rgba(26,19,12,.92), rgba(16,11,7,.92));
+    display:flex; flex-wrap:wrap; gap:8px;
     padding:12px; align-content:flex-start; justify-content:center;
   }
   #harvestSquare:empty::after {
-    content:"the plot waits for a seed"; color:#3f4553; font-size:11.5px;
+    content:"the plot waits for a seed"; color:#5c4a33; font-size:11.5px;
     align-self:center;
   }
-  #harvestSquare .hvCard { border-color:#8fbf4d; box-shadow:0 0 10px rgba(150,220,80,.25); }
-  #harvestOdds { color:#9fd45e; font-size:12px; letter-spacing:1px; margin-top:10px; min-height:1.3em; }
+  #harvestSquare .hvCard { border-color:#8a6d3b; box-shadow:0 0 10px rgba(160,120,50,.3); }
+  #harvestOdds { color:#c9b98a; font-size:12px; letter-spacing:1px; margin-top:10px; min-height:1.3em; }
   #harvestLifeforce {
     display:flex; align-items:center; gap:8px; margin-top:10px;
     color:#c9d7b0; font-size:12px;
@@ -485,12 +487,15 @@
   #harvestLfImg { width:26px; height:26px; object-fit:contain; }
   #harvestBtn {
     margin-top:14px; padding:12px 44px; font-size:15px; font-weight:800; letter-spacing:3px;
-    border-radius:10px; cursor:pointer; color:#0d1a04;
-    background:linear-gradient(180deg,#c9f28a,#8ec33f); border:1px solid #6b902c; box-shadow:0 4px 0 #527020;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f);
+    border:1px solid #3a0808; box-shadow:0 4px 0 #2c0505, inset 0 1px 0 rgba(255,220,180,.18);
+    text-shadow:0 1px 2px rgba(0,0,0,.8);
     animation:btnpulse .7s ease infinite alternate;
   }
+  #harvestBtn:hover { filter:brightness(1.15); }
   #harvestBtn:disabled { opacity:.4; cursor:default; animation:none; }
-  #harvestResult { color:#e8f5d0; font-size:15px; font-weight:700; margin-top:12px; min-height:1.4em; text-shadow:0 0 12px rgba(150,220,80,.5); }
+  #harvestResult { color:#f0d9c0; font-size:15px; font-weight:700; margin-top:12px; min-height:1.4em; text-shadow:0 0 12px rgba(180,60,40,.5); }
   #harvestDone {
     margin-top:14px; padding:12px 34px; font-size:14px; font-weight:800; letter-spacing:2px;
     border-radius:10px; cursor:pointer; color:#1a0033;
@@ -2059,8 +2064,9 @@ function maybeShowHarvest(round, goNext) {
   }
   function render() {
     if (staked.size === 0 && owned.size > 0) {
-      // with a single game left it stakes itself, the grove insists
-      staked.add([...owned][0]);
+      // everything won goes straight into the plot. pulling games back to
+      // the stash is his choice, one always stays planted
+      owned.forEach((nm) => staked.add(nm));
     }
     invGrid.innerHTML = ""; square.innerHTML = "";
     games.forEach((g) => {
