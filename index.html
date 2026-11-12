@@ -1089,7 +1089,7 @@ const CONFIG = {
     },
     {
       caseName: "THE DRAGON'S DEN",
-      caseNote: "the whole like a dragon family is watching this one",
+      caseNote: "the whole like family is watching this one",
       harvest: true, // winning this opens the sacred grove, see CONFIG.harvest
       prize: {
         name: "Yakuza: Like a Dragon",
@@ -1658,10 +1658,11 @@ function maybeShowTrial(goNext) {
 // happens first when possible, and the finale always keeps the last slot.
 function requeueVaalRound(round) {
   const rounds = CONFIG.rounds;
-  let pos = roundIdx + 2;
-  // stay clear of the pinned tail: the pre-finale and finale slots keep their places
-  const firstPin = rounds.findIndex((r) => r.finale || r.preFinale);
-  if (firstPin >= 0) pos = Math.min(pos, firstPin);
+  let pos = roundIdx + 2; // a breather when possible
+  // gifts lost to the vaal or the grove come back one more time after the
+  // pre-finale, as the very last crates before the treasure itself
+  const firstFinale = rounds.findIndex((r) => r.finale);
+  if (firstFinale >= 0) pos = Math.min(pos, firstFinale);
   pos = Math.max(roundIdx + 1, Math.min(pos, rounds.length));
   rounds.splice(pos, 0, round);
 }
@@ -1720,6 +1721,7 @@ function maybeShowVaal(round, goNext) {
           round.prize.vaaled = true;
           if (round.upgrade.img) round.prize.img = round.upgrade.img; // the corruption even swaps the art
           drawPrize();
+          playEmote("win"); // the corruption was kind
           // the upgraded item's own theme, when it carries one
           if (round.upgrade.sound) playPrizeSound(round.upgrade.sound);
           // the reveal is a triumph, not a funeral
@@ -1746,6 +1748,7 @@ function maybeShowVaal(round, goNext) {
           }
         } else {
           // bricked. the prize evaporates and returns to the pool for another run
+          playEmote("lose"); // the vaal took it
           $("vaalPrize").classList.add("poofed");
           beep(330, 0.15, "square", 0.12); beep(247, 0.2, "square", 0.12, 0.15); beep(160, 0.45, "sawtooth", 0.12, 0.35);
           $("vaalAsk").textContent = V.brick || "the vaal took it.";
