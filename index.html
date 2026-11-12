@@ -1124,8 +1124,9 @@ const CONFIG = {
         img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1163550/header.jpg",
         tier: "gold",
         flavor: "the ball is your friend. so are we. mostly the ball.",
-        // win sound: maven says "A battle for the ages, with exotic rewards to match..."
-        sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_158_01_a.ogg",
+        // win sound: the full anthem, almost two minutes of it
+        sound: "assets/tsubasa_anthem.mp3",
+        soundCut: true, // long win sounds stop the moment he clicks continue
         key: "enc:eWByDQUYewVxNWROD2ALfS8=",
         from: "Crusader Dufus",
       },
@@ -3056,6 +3057,11 @@ function fallbackCopy(txt, done) {
 $("nextBtn").addEventListener("click", () => {
   $("modalBack").classList.remove("show");
   setTimeout(() => $("modalBack").classList.add("hidden"), 300);
+  // a prize flagged soundCut has its win theme silenced on continue, every
+  // other win sound keeps playing like it always did
+  if (modalMode !== "view" && currentRound && currentRound.prize && currentRound.prize.soundCut && prizeAudio) {
+    try { prizeAudio.pause(); } catch (e) {}
+  }
   if (modalMode === "view") return; // came from the final screen, just close
   if (!wonKeys.includes(currentRound)) wonKeys.push(currentRound);
   spinning = false;
