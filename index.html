@@ -2063,9 +2063,9 @@ function maybeShowHarvest(round, goNext) {
   }
   function render() {
     if (staked.size === 0 && owned.size > 0) {
-      // everything won goes straight into the plot. pulling games back to
-      // the stash is his choice, one always stays planted
-      owned.forEach((nm) => staked.add(nm));
+      // safety net: if the plot is empty but he still owns games (he lost
+      // the stake but kept the stash), one joins automatically
+      staked.add([...owned][0]);
     }
     invGrid.innerHTML = ""; square.innerHTML = "";
     games.forEach((g) => {
@@ -2141,6 +2141,9 @@ function maybeShowHarvest(round, goNext) {
       }
       staked.clear();
       owned.clear();
+      // new wins go straight into the plot, the stash stays exactly as he
+      // left it: nothing he deliberately unstaked ever jumps back in
+      drawn.forEach((g) => { owned.add(g.name); staked.add(g.name); });
       grant(drawn);
       safe.forEach((nm) => owned.add(nm));
       result.textContent = (H.yieldLabel || "the craft yields") + " " + final +
