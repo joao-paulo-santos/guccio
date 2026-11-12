@@ -328,6 +328,53 @@
   #callBtn:disabled { opacity:.45; cursor:default; animation:none; }
   #callFine { margin-top:20px; color:#4a5162; font-size:11px; }
 
+  /* ============ MAVEN MEMORY GAME (EXPERIMENTAL) ============ */
+  #maven { background:radial-gradient(circle at 50% 30%, #1b0f33 0%, #0a0714 55%, #050308 100%); z-index:60; }
+  #mavenBox { text-align:center; width:min(92vw,560px); }
+  #mavenTitle {
+    font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#c9a2ff;
+    font-size:clamp(20px,3.6vw,30px); text-shadow:0 0 24px rgba(160,90,255,.5);
+  }
+  #mavenSub { color:#8b93a3; font-size:13px; margin-top:8px; min-height:1.4em; }
+  #mavenRound { color:#5b6275; font-size:11px; letter-spacing:3px; margin-top:10px; }
+  #mavenStage { position:relative; width:min(72vw,320px); margin:18px auto 0; }
+  #mavenArena { width:100%; height:auto; display:block; }
+  #mavenRing { fill:none; stroke:#2a1d4a; stroke-width:2; }
+  #mavenHub { fill:#0a0714; stroke:#3a2a63; stroke-width:2; }
+  #mv0 { fill:#ff5a3c; } #mv1 { fill:#3ca0ff; } #mv2 { fill:#ffd94a; }
+  #mavenArena path { opacity:.5; stroke:#0a0714; stroke-width:3; cursor:pointer; transition:opacity .1s ease, filter .1s ease; }
+  #mavenArena[data-phase="show"] path { cursor:default; }
+  #mavenArena[data-phase="input"] path:hover { opacity:.85; }
+  #mv0.lit { opacity:1; filter:brightness(1.7) drop-shadow(0 0 22px #ff5a3c); }
+  #mv1.lit { opacity:1; filter:brightness(1.7) drop-shadow(0 0 22px #3ca0ff); }
+  #mv2.lit { opacity:1; filter:brightness(1.7) drop-shadow(0 0 22px #ffd94a); }
+  #mavenArena.shake { animation:mavenShake .5s ease; }
+  @keyframes mavenShake {
+    20% { transform:translateX(-10px) rotate(-2deg); }
+    40% { transform:translateX(9px) rotate(2deg); }
+    60% { transform:translateX(-6px); }
+    80% { transform:translateX(4px); }
+  }
+  #mavenEye {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    font-size:26px; pointer-events:none; filter:drop-shadow(0 0 12px rgba(160,90,255,.8));
+    animation:mavenblink 4s ease infinite;
+  }
+  @keyframes mavenblink {
+    0%,92%,100% { transform:translate(-50%,-50%) scaleY(1); }
+    95% { transform:translate(-50%,-50%) scaleY(.1); }
+  }
+  #mavenPips { min-height:12px; margin-top:14px; display:flex; gap:7px; justify-content:center; }
+  #mavenPips .pip { width:9px; height:9px; border-radius:50%; background:#241a3e; border:1px solid #3a2a63; }
+  #mavenPips .pip.done { background:#c9a2ff; border-color:#c9a2ff; box-shadow:0 0 8px rgba(160,90,255,.9); }
+  #mavenBtns { margin-top:16px; display:flex; gap:14px; justify-content:center; }
+  #mavenBtns button { padding:12px 30px; font-size:14px; font-weight:800; letter-spacing:2px; border-radius:10px; cursor:pointer; }
+  #mavenRestart { color:#ffd7de; background:linear-gradient(180deg,#a13446,#7c1f30); border:1px solid #5c1626; box-shadow:0 4px 0 #4a111e; }
+  #mavenRestart:hover { filter:brightness(1.15); }
+  #mavenBtn { color:#1a0033; background:linear-gradient(180deg,#d9b3ff,#a86bff); border:1px solid #7a48c9; box-shadow:0 4px 0 #5d36a0; animation:btnpulse .7s ease infinite alternate; }
+  #mavenBtn:hover { filter:brightness(1.1); }
+  #mavenFine { margin-top:18px; color:#4a5162; font-size:11px; }
+
   /* ============ VAAL / ATZIRI ============ */
   #vaal { background:#0a0709; z-index:60; overflow:hidden; }
   #vaalBg {
@@ -534,6 +581,31 @@
     <div id="callBarLabel">PATIENT STABILITY</div>
     <button id="callBtn">ADMINISTER</button>
     <div id="callFine">medical accuracy: emotional at best</div>
+  </div>
+</div>
+
+<!-- ==================== MAVEN MEMORY GAME (EXPERIMENTAL) ==================== -->
+<div id="maven" class="screen hidden">
+  <div id="mavenBox">
+    <div id="mavenTitle">THE MAVEN'S MEMORY GAME</div>
+    <div id="mavenSub">watch the arena. repeat the ritual. do not disappoint her.</div>
+    <div id="mavenRound">WAVE 1 / 3</div>
+    <div id="mavenStage">
+      <svg id="mavenArena" viewBox="0 0 200 200" data-phase="idle">
+        <circle id="mavenRing" cx="100" cy="100" r="96" />
+        <path id="mv0" d="M100,100 L100,12 A88,88 0 0 1 176.2,144 Z" />
+        <path id="mv1" d="M100,100 L176.2,144 A88,88 0 0 1 23.8,144 Z" />
+        <path id="mv2" d="M100,100 L23.8,144 A88,88 0 0 1 100,12 Z" />
+        <circle id="mavenHub" cx="100" cy="100" r="26" />
+      </svg>
+      <div id="mavenEye">👁️</div>
+    </div>
+    <div id="mavenPips"></div>
+    <div id="mavenBtns">
+      <button id="mavenRestart" class="hidden">START OVER</button>
+      <button id="mavenBtn" class="hidden">CONTINUE</button>
+    </div>
+    <div id="mavenFine">she has witnessed every possible failure. yours is not new.</div>
   </div>
 </div>
 
@@ -859,6 +931,7 @@ const CONFIG = {
 
   // EXPERIMENTAL, might be removed: the diabetic call interlude.
   // guccio's day job crashes the birthday: stability drains, spam the pump, save the patient.
+  // currently parked: the maven's memory game below took its slot.
   call: {
     title: "Incoming call FROM A DIABETIC!!!!!",
     ringSub: "someone needs help with their insulin. pick up.",
@@ -866,6 +939,23 @@ const CONFIG = {
     pickup: "PICK UP",
     button: "ADMINISTER",
     saved: "PATIENT STABILIZED. he will now talk about his grandchildren for 40 minutes.",
+  },
+
+  // EXPERIMENTAL, might be removed: the maven's memory game. her arena flashes
+  // a sequence, he repeats it on the same tiles. inspired by her real fight,
+  // scaled down to birthday difficulty.
+  mavenGame: {
+    title: "THE MAVEN'S MEMORY GAME",
+    sub: "watch the arena. repeat the ritual. do not disappoint her.",
+    rounds: [3, 4, 5],
+    waveLabel: "WAVE",
+    watchSub: "watch.",
+    yourSub: "now you.",
+    clearSub: "she approves. she wants more.",
+    failSub: "wrong. she noticed. she laughed.",
+    winSub: "a delightful show. she is letting you live.",
+    restart: "START OVER",
+    cont: "CONTINUE",
   },
 
   trial: {
@@ -996,6 +1086,38 @@ const CONFIG = {
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_186_01_d.ogg",
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_59_06_b.ogg",
       "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_23_04_b.ogg",
+    ],
+    // the maven's memory game. every cue is a voice bank: a random variant
+    // plays, never the same one twice in a row, so failing over and over
+    // stays fresh. greet = entry, show = demo, clear = wave cleared,
+    // fail = wrong tile, win = all waves done
+    mavenGreet: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_79_06_a.ogg", // a new challenge. come.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_50_03_a.ogg", // new! come.
+    ],
+    mavenShow: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_41_09_a.ogg", // show might.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_96_02_a.ogg", // a show for me.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_43_05_a.ogg", // test. come.
+    ],
+    mavenClear: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_42_01_a.ogg", // another. joy.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_41_08_a.ogg", // impress.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_07_01_b.ogg", // joy!
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_116_05_a.ogg", // i was not bored!
+    ],
+    mavenFail: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_59_08_b.ogg", // not good!
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_59_08_c.ogg", // not. good.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_59_08_a.ogg", // not good...
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_06_05_a.ogg", // boredom...
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_97_04_c.ogg", // not challenge enough!
+    ],
+    mavenWin: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_150_03_a.ogg", // a delightful show...
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_02_a.ogg", // most entertaining. take the prize.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_01_a.ogg", // the victorious plaything receives a reward.
+      "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_152_05_a.ogg", // unexpected, but not unwelcome.
     ],
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
@@ -1239,6 +1361,118 @@ function maybeShowCall(goNext) {
   };
 }
 
+// EXPERIMENTAL, might be removed: the maven's memory game. her arena flashes
+// a sequence in the three elements, he repeats it tile by tile. three waves,
+// each one longer, and one wrong tile sends him back to the very first wave.
+function maybeShowMaven(goNext) {
+  const M = CONFIG.mavenGame || {};
+  const rounds = (M.rounds && M.rounds.length) ? M.rounds : [3, 4, 5];
+  const arena = $("mavenArena"), sub = $("mavenSub");
+  const tiles = [0, 1, 2].map((i) => $("mv" + i));
+  const pips = $("mavenPips"), roundEl = $("mavenRound");
+  $("mavenTitle").textContent = M.title || "THE MAVEN'S MEMORY GAME";
+  sub.textContent = M.sub || "watch the arena. repeat the ritual.";
+  gameEl.classList.add("hidden");
+  finalEl.classList.add("hidden");
+  $("maven").classList.remove("hidden");
+  playPoe("mavenGreet"); // "a new challenge. come."
+
+  let wave = 0, seq = [], step = 0;
+
+  // one note per element: fire low, cold mid, lightning high. her demo is
+  // softer and rounder, his clicks answer in brighter square pings
+  function tone(i, who) {
+    const f = [311, 415, 554][i] || 415;
+    beep(f, who === "maven" ? 0.22 : 0.13, who === "maven" ? "triangle" : "square", who === "maven" ? 0.16 : 0.1);
+    beep(f * 2, 0.06, "sine", 0.04);
+  }
+  function flash(i, who, ms) {
+    tiles[i].classList.add("lit");
+    tone(i, who);
+    setTimeout(() => tiles[i].classList.remove("lit"), ms);
+  }
+  function drawPips(done) {
+    pips.innerHTML = "";
+    for (let k = 0; k < seq.length; k++) {
+      const s = document.createElement("span");
+      s.className = "pip" + (k < done ? " done" : "");
+      pips.appendChild(s);
+    }
+  }
+  function startWave() {
+    seq = [];
+    for (let k = 0; k < rounds[wave]; k++) seq.push(Math.floor(Math.random() * 3));
+    step = 0;
+    roundEl.textContent = (M.waveLabel || "WAVE") + " " + (wave + 1) + " / " + rounds.length;
+    arena.dataset.seq = seq.join(",");
+    arena.dataset.phase = "show";
+    sub.textContent = M.watchSub || "watch.";
+    pips.innerHTML = "";
+    playPoe("mavenShow"); // "show might."
+    let k = 0;
+    const gap = 560; // her pace: calm, slightly menacing
+    (function demo() {
+      if (k >= seq.length) {
+        setTimeout(() => {
+          if (arena.dataset.phase === "show") { // not failed or restarted meanwhile
+            arena.dataset.phase = "input";
+            sub.textContent = M.yourSub || "now you.";
+            drawPips(0);
+          }
+        }, gap);
+        return;
+      }
+      flash(seq[k], "maven", 340);
+      k++;
+      setTimeout(demo, gap);
+    })();
+  }
+  function fail() {
+    arena.dataset.phase = "fail";
+    playPoe("mavenFail"); // "not good!"
+    sub.textContent = M.failSub || "wrong. she noticed.";
+    arena.classList.remove("shake"); void arena.offsetWidth; arena.classList.add("shake");
+    drawPips(0);
+    $("mavenRestart").textContent = M.restart || "START OVER";
+    $("mavenRestart").classList.remove("hidden");
+  }
+
+  if (!arena.dataset.wired) {
+    arena.dataset.wired = "1";
+    tiles.forEach((t, i) => t.addEventListener("click", () => {
+      if (arena.dataset.phase !== "input") return; // no clicking during her demo
+      flash(i, "you", 200);
+      if (i !== seq[step]) { fail(); return; }
+      step++;
+      drawPips(step);
+      if (step < seq.length) return;
+      if (wave + 1 < rounds.length) {
+        arena.dataset.phase = "cleared";
+        playPoe("mavenClear"); // "another. joy."
+        sub.textContent = M.clearSub || "she approves.";
+        wave++;
+        setTimeout(startWave, 1500);
+      } else {
+        arena.dataset.phase = "won";
+        playPoe("mavenWin"); // "a delightful show."
+        sub.textContent = M.winSub || "a delightful show.";
+        $("mavenBtn").textContent = M.cont || "CONTINUE";
+        $("mavenBtn").classList.remove("hidden");
+      }
+    }));
+    $("mavenRestart").onclick = () => {
+      $("mavenRestart").classList.add("hidden");
+      wave = 0;
+      startWave(); // from the top, fresh ritual
+    };
+    $("mavenBtn").onclick = () => {
+      $("maven").classList.add("hidden");
+      goNext();
+    };
+  }
+  startWave();
+}
+
 function maybeShowInterlude(roundIndex, goNext) {
   playPoe("tujen");
   const I = CONFIG.interlude;
@@ -1260,10 +1494,21 @@ function maybeShowInterlude(roundIndex, goNext) {
 // to decide whether consuming their turn made sense.
 const poePlayers = {};
 function playPoe(name) {
-  const src = CONFIG.sounds && CONFIG.sounds[name];
+  let src = CONFIG.sounds && CONFIG.sounds[name];
   if (!src || !sfxOn) return false;
-  let a = poePlayers[name];
-  if (!a) { a = new Audio(src); a.preload = "auto"; poePlayers[name] = a; }
+  let key = name;
+  if (Array.isArray(src)) {
+    // voice bank: pick a random variant, never the same one twice in a row
+    if (!src.length) return false;
+    const last = playPoe.picks && playPoe.picks[name];
+    let idx = Math.floor(Math.random() * src.length);
+    if (src.length > 1 && idx === last) idx = (idx + 1) % src.length;
+    (playPoe.picks || (playPoe.picks = {}))[name] = idx;
+    key = name + "#" + idx;
+    src = src[idx];
+  }
+  let a = poePlayers[key];
+  if (!a) { a = new Audio(src); a.preload = "auto"; poePlayers[key] = a; }
   if (!a.paused) return false; // this line is already talking
   if (Object.values(poePlayers).some((p) => !p.paused && !p.ended)) return false; // someone else is
   try {
@@ -1469,7 +1714,7 @@ function startFriends() {
 // ---------- strip machinery ----------
 const ITEM_W = 144; // 136px card + 8px gap, keep in sync with css if you touch sizes
 const HALF_W = 68;   // half a card, where the marker meets the strip
-let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, callDone = false;
+let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, mavenDone = false;
 
 function shuffle(a) {
   a = a.slice();
@@ -1758,11 +2003,11 @@ $("nextBtn").addEventListener("click", () => {
   const next = roundIdx + 1;
   if (next < CONFIG.rounds.length) {
     // interlude dispatch: atziri claims her vaal round whenever it lands,
-    // the trialmaster takes the first other one, then the EXPERIMENTAL diabetic
-    // call, and tujen owns everything after that
+    // the trialmaster takes the first other one, then the EXPERIMENTAL maven
+    // memory game (the diabetic call is parked for now), tujen owns the rest
     if (currentRound.vaal && currentRound.upgrade) maybeShowVaal(currentRound, () => loadRound(next));
     else if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => loadRound(next)); }
-    else if (!callDone) { callDone = true; maybeShowCall(() => loadRound(next)); }
+    else if (!mavenDone) { mavenDone = true; maybeShowMaven(() => loadRound(next)); }
     else maybeShowInterlude(next, () => loadRound(next));
   } else {
     // last gift done, no deal to offer anymore, straight to the loot
