@@ -2649,6 +2649,12 @@ function showAdminRewards() {
   grid.innerHTML = "";
   const preview = [];
   CONFIG.rounds.forEach((r) => preview.push({ label: r.caseName, r }));
+  // the corrupted variants are rewards too: what atziri can turn them into
+  CONFIG.rounds.forEach((r) => {
+    if (!r.upgrade) return;
+    preview.push({ label: "ATZIRI'S VAAL", r: { caseName: "ATZIRI'S VAAL",
+      prize: Object.assign({}, r.prize, { name: r.upgrade.name, img: r.upgrade.img || r.prize.img, vaaled: true }) } });
+  });
   ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
     if (!CONFIG.rounds.some((r) => r.prize.name === g.name)) {
       preview.push({ label: "THE SACRED GROVE", r: { caseName: "THE SACRED GROVE",
