@@ -503,9 +503,6 @@
   #rwTabs button.on { background:linear-gradient(180deg,#8c2020,#5a0f0f); box-shadow:0 0 12px rgba(200,40,40,.4); }
   #rwTabs button:hover { filter:brightness(1.2); }
   #adminRewardsGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
-  .rwPair { display:flex; gap:8px; }
-  .rwPair .card.hnear { transform:scale(.78); transform-origin:bottom center; opacity:.85; cursor:default; }
-  .rwPair .card.hnear:hover { transform:scale(.78); box-shadow:none; }
   #adminFillersGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
   #adminFillersGrid .card { cursor:default; }
   #adminRewardsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
@@ -698,6 +695,9 @@
   #winArt .art.pic { width:112px; height:82px; background-size:contain; background-position:center; background-repeat:no-repeat; }
   #winCard .nm { font-size:13px; font-weight:800; padding:0 8px; }
   #winCard .sb { font-size:10px; color:#79808f; padding:0 8px; }
+  #nearBox { margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  #nearBox .nearLabel { color:#5b6275; font-size:10px; letter-spacing:3px; }
+  #nearBox .card { transform:scale(.72); transform-origin:top center; margin:-14px 0; cursor:default; }
   #winFlavor { color:#8b93a3; font-size:13.5px; line-height:1.5; min-height:20px; }
   #giftFrom { display:none; margin-top:12px; }
   #giftFrom.show { display:block; }
@@ -1018,6 +1018,10 @@
     </div>
     <div id="winFlavor"></div>
     <div id="giftFrom"></div>
+    <div id="nearBox" class="hidden">
+      <div class="nearLabel">THE ALMOST</div>
+      <div id="nearCard"></div>
+    </div>
     <button id="unwrapBtn">UNWRAP KEY</button>
     <div id="keyBox">
       <div id="keyVal"></div>
@@ -2867,22 +2871,14 @@ function showAdminRewards() {
   grid.innerHTML = "";
   fills.innerHTML = "";
 
-  // every round: the prize beside its near miss
+  // every round prize; its near miss shows inside the preview when clicked
   CONFIG.rounds.forEach((r) => {
-    const pair = document.createElement("div");
-    pair.className = "rwPair";
     const c = makeCard(Object.assign({ tier: "gold", sub: r.caseName }, r.prize));
     c.onclick = () => {
       playPrizeSound(r.prize.sound); // the win theme, if it has one
-      openWinModal(r, true); // view mode: BACK instead of CONTINUE
+      openWinModal(r, true, r.nearMiss); // view mode: BACK instead of CONTINUE
     };
-    pair.appendChild(c);
-    if (r.nearMiss) {
-      const n = makeCard(r.nearMiss);
-      n.classList.add("hnear"); // the almost, not clickable, it was never real
-      pair.appendChild(n);
-    }
-    grid.appendChild(pair);
+    grid.appendChild(c);
   });
   // the corrupted variants are rewards too: what atziri can turn them into
   CONFIG.rounds.forEach((r) => {
@@ -3308,7 +3304,7 @@ function addToInv(r) {
 
 // ---------- win modal ----------
 let currentRound = null, modalMode = "round"; // "round" = no key yet, "view" = reopened from final
-function openWinModal(r, view) {
+function openWinModal(r, view, nearItem) {
   currentRound = r;
   modalMode = view ? "view" : "round";
   $("winTitle").textContent = "WINNER WINNER";
@@ -3329,6 +3325,12 @@ function openWinModal(r, view) {
     ]);
     gf.classList.add("show");
   } else { gf.replaceChildren(); gf.classList.remove("show"); }
+  // the reward hub shows what almost dropped instead, the show itself never does
+  const nb = $("nearBox");
+  if (view && nearItem) {
+    $("nearCard").replaceChildren(makeCard(nearItem));
+    nb.classList.remove("hidden");
+  } else nb.classList.add("hidden");
   $("unwrapBtn").classList.toggle("hidden", !view);
   $("unwrapBtn").textContent = r.prize.reveal ? "CLAIM" : "UNWRAP KEY";
   if (!view) addToInv(r); // loot goes straight to the inventory rail
