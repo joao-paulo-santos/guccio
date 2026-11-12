@@ -1217,13 +1217,40 @@ const CONFIG = {
     cont: "CONTINUE",
   },
 
-  // emote player: playEmote("ezguccio1", "GG EZ") pops a picture in the
-  // bottom right with the text under it, then leaves on its own. images live
-  // in assets/emotes/ and the extension is optional.
+  // emote player: playEmote("win") pops a random win emote bottom right,
+  // playEmote("win", "custom text") overrides the caption, and
+  // playEmote("ezguccio1", "GG EZ") plays one file directly. bare file names
+  // probe the usual extensions, every entry can carry its own default text.
   emotes: {
     path: "assets/emotes/",
     duration: 2,     // seconds on screen
     maxSize: 180,    // px cap for the picture
+    categories: {
+      win: [
+        { file: "ezguccio1", text: "GG EZ" },
+        { file: "pogomarco" },
+        { file: "blessedecila" },
+        { file: "pepeez" },
+        { file: "STK-20190503-WA0003" },
+        { file: "ecilaburger" },
+        { file: "daniparty" },
+        { file: "partyecila" },
+      ],
+      setback: [
+        { file: "setbackguccio", text: "" },
+        { file: "pepesetback" },
+        { file: "peperain" },
+        { file: "weirdchamp" },
+      ],
+      lose: [
+        { file: "disapointeddufus", text: "" },
+        { file: "loseguccio" },
+        { file: "pepecryjuice" },
+        { file: "pepecryhug" },
+        { file: "pepehands" },
+        { file: "pepemad" },
+      ],
+    },
   },
 
   // the harvest grove, tied to the round flagged harvest: true (the first
@@ -2433,13 +2460,20 @@ function runPhase(name, goNext) {
 // returns a dismiss function in case a caller wants it gone early.
 function playEmote(emote, text) {
   const E = CONFIG.emotes || {};
+  let file = emote, caption = text;
+  const cat = E.categories && E.categories[emote];
+  if (cat && cat.length) { // a category: surprise him
+    const pick = cat[Math.floor(Math.random() * cat.length)];
+    file = pick.file;
+    if (caption == null) caption = pick.text || "";
+  }
   const d = document.createElement("div");
   d.className = "emote";
   const img = document.createElement("img");
-  img.alt = emote; img.draggable = false;
+  img.alt = file; img.draggable = false;
   img.style.maxWidth = img.style.maxHeight = (E.maxSize || 180) + "px";
   const cap = document.createElement("div");
-  cap.className = "emoteTxt"; cap.textContent = text || "";
+  cap.className = "emoteTxt"; cap.textContent = caption || "";
   d.append(img, cap);
   $("emotes").appendChild(d);
   const kill = () => { d.classList.add("out"); setTimeout(() => d.remove(), 350); };
@@ -2450,7 +2484,7 @@ function playEmote(emote, text) {
     if (i >= exts.length) { clearTimeout(timer); d.remove(); return; } // no such emote, quiet exit
     img.onload = () => { d.classList.add("in"); beep(880, 0.06, "square", 0.07); };
     img.onerror = () => { i++; trySrc(); };
-    img.src = (E.path || "assets/emotes/") + emote + exts[i];
+    img.src = (E.path || "assets/emotes/") + file + exts[i];
   })();
   return kill;
 }
@@ -2467,7 +2501,9 @@ const ADMIN_ITEMS = [
   ["call", "DIABETIC CALL"],
   ["blight", "BLIGHT DEFENSE"],
   ["maven", "MAVEN MEMORY"],
-  ["emote", "EMOTE TEST"],
+  ["emoteWin", "EMOTE WIN"],
+  ["emoteSetback", "EMOTE SETBACK"],
+  ["emoteLose", "EMOTE LOSE"],
 ];
 function showAdmin() {
   ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call"].forEach((id) => {
@@ -2479,7 +2515,9 @@ function showAdmin() {
       const b = document.createElement("button");
       b.textContent = label; b.dataset.phase = key;
       b.onclick = () => {
-        if (key === "emote") { playEmote("ezguccio1", "GG EZ"); return; } // stays in the hub
+        if (key === "emoteWin") { playEmote("win"); return; }       // stays in the hub
+        if (key === "emoteSetback") { playEmote("setback"); return; }
+        if (key === "emoteLose") { playEmote("lose"); return; }
         $("admin").classList.add("hidden");
         runPhase(key, showAdmin);
       };
