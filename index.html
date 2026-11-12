@@ -2264,9 +2264,12 @@ function maybeShowHarvest(round, goNext) {
       if (roll === s) line = "the plot hands back your stake";
       else line = (H.yieldLabel || "the craft yields") + " " + drawn.length + (capped ? ". " + (H.cappedNote || "") : "");
       result.textContent = line + ". you hold " + final;
-      if (final === TOTAL) { render(); winAll(); return; }
-      if (final === 0) { render(); loseAll(); return; }
-      if (final > before) jingle(); // the plot was kind
+      // his face says it: gain or the full set wins, standing still or
+      // shrinking is a setback, an empty stash is a defeat
+      if (final === TOTAL) { playEmote("win"); render(); winAll(); return; }
+      if (final === 0) { playEmote("lose"); render(); loseAll(); return; }
+      if (final > before) { playEmote("win"); jingle(); } // the plot was kind
+      else playEmote("setback");
       playPoe(final > before ? "harvestGain" : (final === before ? "harvestKeep" : "harvestLoseRoll"));
       screen.dataset.phase = "stake";
       btn.disabled = false;
