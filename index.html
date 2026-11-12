@@ -2609,8 +2609,13 @@ function ghostAbduct(ghostSrc, el, done) {
   ghost.className = "ghostThief";
   document.body.appendChild(ghost);
   const r = el.getBoundingClientRect();
+  // the ghost spawns from whichever screen edge is closest to the prize,
+  // and drags it back out the same side it came from
+  const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
+  const start = fromLeft ? -300 : window.innerWidth + 150;
+  const exit = fromLeft ? "-130vw" : "130vw";
   ghost.style.top = (r.top + r.height / 2 - 60) + "px"; // ghost center meets the prize
-  ghost.style.transform = "translateX(-300px)";
+  ghost.style.transform = "translateX(" + start + "px)";
   let grabbed = false;
   const grab = () => {
     if (grabbed) return;
@@ -2619,7 +2624,7 @@ function ghostAbduct(ghostSrc, el, done) {
     ghost.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
     setTimeout(() => { // got it. leave together, same distance, same speed
       ghost.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-      ghost.style.transform = el.style.transform = "translateX(-130vw)";
+      ghost.style.transform = el.style.transform = "translateX(" + exit + ")";
       setTimeout(() => { ghost.remove(); if (done) done(); }, 1300);
     }, 1250);
   };
