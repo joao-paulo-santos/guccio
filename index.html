@@ -282,9 +282,8 @@
   #trialTake:hover { filter:brightness(1.07); }
   #trialTake.gone { visibility:hidden; } /* abducted, but the layout holds its ground */
   #trialTake:disabled { cursor:default; }
-  .ghostThief {
-    position:fixed; left:0; top:0; height:120px; z-index:97; pointer-events:none;
-    transition:transform 1.1s cubic-bezier(.4,0,.3,1);
+  .ghostThief { /* moved every frame by the mover loop, no css transition */
+    position:fixed; left:0; top:0; z-index:97; pointer-events:none;
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.65));
   }
   .ghostThief img { display:block; height:120px; }
@@ -293,9 +292,8 @@
     from { transform:translateY(0) rotate(-3.5deg); }
     to   { transform:translateY(-4px) rotate(3.5deg); }
   }
-  .ghostChaser {
-    position:fixed; left:0; top:0; font-size:64px; z-index:96; pointer-events:none;
-    transition:transform 1.7s cubic-bezier(.4,0,.3,1);
+  .ghostChaser { /* also frame driven */
+    position:fixed; left:0; top:0; font-size:72px; z-index:96; pointer-events:none;
     filter:drop-shadow(0 6px 12px rgba(0,0,0,.6));
   }
   .ghostChaser.flat { animation:monFlat .25s ease forwards; }
@@ -311,13 +309,13 @@
     filter:drop-shadow(0 0 14px rgba(255,217,74,.95));
     animation:divineDrop .45s cubic-bezier(.2,2,.4,1); z-index:97;
   }
-  .divineDrop {
-    position:absolute; transform:translate(-50%,-50%); width:110px; height:32px;
+  .divineDrop { /* margins center it, the transform belongs to the mover loop */
+    position:absolute; width:110px; height:32px; margin-left:-55px; margin-top:-16px;
     background-size:contain; background-position:center; background-repeat:no-repeat;
     filter:drop-shadow(0 0 14px rgba(255,217,74,.9));
     animation:divineDrop .45s cubic-bezier(.2,2,.4,1); z-index:3;
   }
-  @keyframes divineDrop { from { transform:translate(-50%,-120%) scale(.4); opacity:0; } }
+  @keyframes divineDrop { from { transform:translateY(-46px) scale(.4); opacity:0; } }
   #trialOr {
     align-self:center; font-family:Impact,"Arial Black",sans-serif; color:#d8b36a;
     font-size:clamp(40px,7vw,72px); letter-spacing:6px; padding:0 10px;
@@ -2062,7 +2060,7 @@ function maybeShowBlight(goNext) {
     const dx = PX - p[0], dy = PY - p[1], d = Math.hypot(dx, dy);
     const nx = -dy / d, ny = dx / d;
     const bow = (110 + Math.random() * 150) * (Math.random() < 0.5 ? -1 : 1);
-    const ex = PX - dx / d * 70, ey = PY - dy / d * 70; // stop short of the pump
+    const ex = PX, ey = PY; // straight into the pump's heart, hidden behind it
     const c1 = [p[0] + dx * 0.3 + nx * bow, p[1] + dy * 0.3 + ny * bow];
     const c2 = [p[0] + dx * 0.65 + nx * bow * 0.4, p[1] + dy * 0.65 + ny * bow * 0.4];
     const pts = [];
@@ -2628,110 +2626,162 @@ function setEmoteSrc(img, file, onOk, onGone) {
   })();
 }
 
-// a ghost slides in from the closest edge with the original gentle arc,
-// holds the prize a beat, then leaves with it. ghost and prize share one
-// transition and one endpoint, so they always leave together. the ghost is
-// a wrapper (position) around its picture (optional waddle), so the walk
-// animation never fights the movement.
-function ghostAbduct(ghostSrc, el, done, opts) {
-  const o = opts || {};
+// ---------- a tiny frame engine for the ghost heists ----------
+// movers get move orders, arrival triggers events, followers copy their
+// leader every frame. like a game loop: nothing can ever desync, because
+// there are no css transitions to disagree with each other.
+const MOVERS = [];
+let moverLast = 0;
+(function moverLoop(now) {
+  const dt = Math.min(64, (now || performance.now()) - moverLast);
+  moverLast = now || performance.now();
+  for (const m of MOVERS.slice()) m.step(moverLast, dt);
+  requestAnimationFrame(moverLoop);
+})(performance.now());
+
+function makeMover(el, x, y) {
+  const m = {
+    el, x, y, baseX: null, order: null, follow: null, offX: 0, dead: false, each: null,
+    step(now, dt) {
+      if (m.dead) return;
+      if (m.order) { // a move order: walk toward the target over its duration
+        const t = Math.min(1, (now - m.order.t0) / m.order.dur);
+        m.x = m.order.from + (m.order.to - m.order.from) * t;
+        if (t >= 1) { const arr = m.order.arrive; m.order = null; if (arr) arr(); }
+      } else if (m.follow && !m.follow.dead) { // glued to the leader: mirror
+        // his walk from the grab moment, so the prize never leaves his hands
+        const ref = m.follow.grabX !== undefined ? m.follow.grabX : m.follow.x;
+        m.x = (m.follow.x - ref) + m.offX;
+      }
+      if (m.each) m.each();
+      m.el.style.transform = "translate(" + m.x + "px," + m.y + "px)";
+    },
+  };
+  MOVERS.push(m);
+  m.el.style.transform = "translate(" + x + "px," + y + "px)";
+  return m;
+}
+function moveOrder(m, to, dur, arrive) {
+  m.order = { from: m.x, to, t0: performance.now(), dur, arrive: arrive || null };
+}
+function killMover(m) { if (!m) return; m.dead = true; const i = MOVERS.indexOf(m); if (i >= 0) MOVERS.splice(i, 1); }
+
+function ghostWrap(ghostSrc, wobble, top) {
   const wrap = document.createElement("div");
   wrap.className = "ghostThief";
   const img = document.createElement("img");
   img.src = ghostSrc; img.alt = "ghost"; img.draggable = false;
-  if (o.wobble) img.classList.add("walkFunny");
+  if (wobble) img.classList.add("walkFunny");
   wrap.appendChild(img);
   document.body.appendChild(wrap);
+  return { wrap, img, top };
+}
+
+// a ghost walks in from the closest edge at game speed, grabs the prize,
+// holds it a beat, then walks out with it glued to him
+function ghostAbduct(ghostSrc, el, done, opts) {
+  const o = opts || {};
   const r = el.getBoundingClientRect();
   const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
-  const start = fromLeft ? -260 : window.innerWidth + 130;
-  const exit = fromLeft ? "-130vw" : "130vw";
-  wrap.style.top = (r.top + r.height / 2 - 60) + "px"; // ghost center meets the prize
-  wrap.style.transform = "translateX(" + start + "px)";
-  let grabbed = false;
+  const sign = fromLeft ? 1 : -1;
+  const startX = fromLeft ? -260 : window.innerWidth + 130;
+  const { wrap, img } = ghostWrap(ghostSrc, o.wobble, r.top + r.height / 2 - 60);
+  const g = makeMover(wrap, startX, r.top + r.height / 2 - 60);
+  const itemX = r.left + r.width / 2;
+  let grabbedM = null;
   const grab = () => {
-    if (grabbed) return;
-    grabbed = true;
+    if (grabbedM) return;
+    grabbedM = true;
     const gw = wrap.getBoundingClientRect().width || 130;
-    wrap.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
-    setTimeout(() => { // hold it a beat, then leave as one
-      wrap.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-      wrap.style.transform = el.style.transform = "translateX(" + exit + ")";
-      setTimeout(() => { wrap.remove(); if (done) done(); }, 1300);
-    }, 1400);
+    const gx = itemX - gw / 2;
+    moveOrder(g, gx, 500 + Math.abs(gx - startX), () => { // arrived: take it
+      g.grabX = g.x;
+      const item = makeMover(el, 0, 0); // its transform mirrors the ghost's walk
+      item.follow = g; item.offX = 0;
+      setTimeout(() => { // hold the prize a beat, then the long walk home
+        const away = g.x - sign * window.innerWidth * 1.5;
+        moveOrder(g, away, 1100, () => { killMover(g); killMover(item); wrap.remove(); if (done) done(); });
+      }, 450);
+    });
   };
   img.onload = grab;
   setTimeout(grab, 300); // environments that never load images still get the show
   return wrap;
 }
 
-// rua's heist is a whole production: a monster chases him in, slower, he
-// grabs the divine, walks out, flattens the monster on the way, and the
-// monster drops a mageblood with the drop ping. which he also takes.
+// rua's heist, same engine: the rat chases him in, he grabs the divine,
+// flattens the rat right when he passes it, and the rat drops a mageblood
+// that then chases rua off screen. rua's luck is real.
 function ghostRuaHeist(el, done) {
   const r = el.getBoundingClientRect();
   const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
-  const start = fromLeft ? -260 : window.innerWidth + 130;
-  const exit = fromLeft ? "-130vw" : "130vw";
+  const sign = fromLeft ? 1 : -1;
+  const startX = fromLeft ? -260 : window.innerWidth + 130;
+  const itemX = r.left + r.width / 2;
 
-  // rua: a wrapper that moves, a picture that waddles
-  const rua = document.createElement("div");
-  rua.className = "ghostThief";
-  const ruaImg = document.createElement("img");
-  ruaImg.src = "assets/emotes/ghostrua.png"; ruaImg.alt = "ghost rua"; ruaImg.draggable = false;
-  ruaImg.classList.add("walkFunny");
-  rua.appendChild(ruaImg);
-  rua.style.top = (r.top + r.height / 2 - 60) + "px";
-  rua.style.transform = "translateX(" + start + "px)";
-  document.body.appendChild(rua);
+  const { wrap: ruaW, img: ruaI } = ghostWrap("assets/emotes/ghostrua.png", true, r.top + r.height / 2 - 60);
+  const rua = makeMover(ruaW, startX, r.top + r.height / 2 - 60);
 
-  // the rat, right behind him and slower
   const mon = document.createElement("div");
-  mon.className = "ghostChaser"; mon.textContent = "\uD83D\uDC80";
-  mon.style.top = (r.top + r.height / 2 - 36) + "px";
-  mon.style.transform = "translateX(" + (fromLeft ? start - 150 : start + 150) + "px)";
+  mon.className = "ghostChaser"; mon.textContent = "\uD83D\uDC00"; // a proper blight rat
   document.body.appendChild(mon);
+  const rat = makeMover(mon, startX - sign * 150, r.top + r.height / 2 - 36);
   $("blight").dataset.chaser = "1";
+
+  let flattened = false;
+  rua.each = () => { // the pass: flatten the rat the moment rua reaches it
+    if (flattened || !rua.leaving) return;
+    if (Math.abs(rua.x + 120 - rat.x) > 90) return;
+    flattened = true;
+    const mr = mon.getBoundingClientRect();
+    const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
+    mon.classList.add("flat");
+    setTimeout(() => { killMover(rat); mon.remove(); }, 300);
+    beep(150, 0.12, "square", 0.12); beep(90, 0.2, "sawtooth", 0.1, 0.06);
+    const fx = document.createElement("div");
+    fx.className = "popBurst"; fx.textContent = "\uD83D\uDCA5";
+    fx.style.left = cx + "px"; fx.style.top = cy + "px";
+    document.body.appendChild(fx);
+    setTimeout(() => fx.remove(), 420);
+    // the rat drops a mageblood. rua takes it, obviously
+    const mb = document.createElement("div");
+    mb.className = "mbDrop"; mb.title = "mageblood";
+    mb.style.backgroundImage = 'url("assets/mageblood.png")';
+    mb.style.left = (cx - 55) + "px"; mb.style.top = (cy - 16) + "px";
+    document.body.appendChild(mb);
+    const mbM = makeMover(mb, cx, 0);
+    $("blight").dataset.mageblood = "1";
+    playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
+    setTimeout(() => { // it chases after him, trailing from where it dropped
+      const ref = rua.grabX !== undefined ? rua.grabX : rua.x;
+      mbM.follow = rua;
+      mbM.offX = -(rua.x - ref); // start of the chase: no jump
+    }, 450);
+  };
 
   let grabbed = false;
   const grab = () => {
     if (grabbed) return;
     grabbed = true;
-    const rw = rua.getBoundingClientRect().width || 130;
-    const gx = r.left + r.width / 2 - rw / 2;
-    rua.style.transform = "translateX(" + gx + "px)";
-    mon.style.transform = "translateX(" + (gx + (fromLeft ? -95 : 95)) + "px)"; // almost gets him
-    setTimeout(() => { // leave with the divine, as one
-      rua.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-      rua.style.transform = el.style.transform = "translateX(" + exit + ")";
-      setTimeout(() => { // rua flattens the rat on the way out
-        const mr = mon.getBoundingClientRect();
-        const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
-        mon.classList.add("flat");
-        setTimeout(() => mon.remove(), 300);
-        beep(150, 0.12, "square", 0.12); beep(90, 0.2, "sawtooth", 0.1, 0.06);
-        const fx = document.createElement("div");
-        fx.className = "popBurst"; fx.textContent = "\uD83D\uDCA5";
-        fx.style.left = cx + "px"; fx.style.top = cy + "px";
-        document.body.appendChild(fx);
-        setTimeout(() => fx.remove(), 420);
-        // the rat drops a mageblood. rua takes it, obviously
-        const mb = document.createElement("div");
-        mb.className = "mbDrop"; mb.title = "mageblood";
-        mb.style.backgroundImage = 'url("assets/mageblood.png")';
-        mb.style.left = (cx - 55) + "px"; mb.style.top = (cy - 16) + "px";
-        document.body.appendChild(mb);
-        $("blight").dataset.mageblood = "1";
-        playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
-        setTimeout(() => { // and off it goes with him
-          mb.style.transition = "transform 1s cubic-bezier(.55,0,.85,.4)";
-          mb.style.transform = "translateX(" + exit + ")";
-          setTimeout(() => { mb.remove(); if (done) done(); }, 1100);
-        }, 500);
-      }, 600);
-    }, 1400);
+    const rw = ruaW.getBoundingClientRect().width || 130;
+    const gx = itemX - rw / 2;
+    moveOrder(rua, gx, 500 + Math.abs(gx - startX), () => { // arrived: take it
+      rua.grabX = rua.x;
+      const item = makeMover(el, 0, 0);
+      item.follow = rua; item.offX = 0;
+      setTimeout(() => { // hold the divine a beat, then the long walk home
+        rua.leaving = true; // from here on, watch for the rat on the way out
+        const away = rua.x - sign * window.innerWidth * 1.5;
+        moveOrder(rua, away, 1100, () => { killMover(rua); wrap2done(); });
+      }, 450);
+    });
+    moveOrder(rat, gx - sign * 95, 500 + Math.abs(gx - startX) * 1.35); // slower, almost gets him
   };
-  ruaImg.onload = grab;
+  function wrap2done() {
+    killMover(MOVERS.find((m) => m.el === el));
+    if (done) done();
+  }
+  ruaI.onload = grab;
   setTimeout(grab, 300);
 }
 
