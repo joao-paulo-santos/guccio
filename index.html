@@ -1346,6 +1346,7 @@ const CONFIG = {
     lifeforceLabel: "Vivid Crystallised Lifeforce",
     lifeforceImg: "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvSGFydmVzdC9WaXZpZExpZmVmb3JjZSIsInNjYWxlIjoxfV0/a355b8a5a2/VividLifeforce.png",
     craft: "CRAFT",
+    luck: 0.9,       // the grove skims ten percent off a fair roll, 1 would be honest
     oddsLabel: "STAKED",              // "STAKED 2: the craft yields 0 - 4"
     yieldLabel: "the craft yields",
     cappedNote: "the grove gives all it has",
@@ -2322,7 +2323,8 @@ function maybeShowHarvest(round, goNext) {
     setTimeout(() => {
       const s = staked.size;
       const before = owned.size;
-      const roll = Math.floor(Math.random() * (2 * s + 1)); // 0 to double, inclusive
+      // 0 to double, inclusive, scaled by luck: the grove quietly skims
+      const roll = Math.floor(Math.random() * (2 * s + 1) * (H.luck || 1));
       const safe = new Set([...owned].filter((nm) => !staked.has(nm))); // never at risk
       const raw = safe.size + roll;
       const capped = raw > TOTAL;
