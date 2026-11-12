@@ -2093,7 +2093,7 @@ function maybeShowBlight(goNext) {
       m.dead = true;
       popped++;
       if (m.gnawing && !spawned.some((o) => !o.dead && o.gnawing)) $("blightPump").classList.remove("alarmed");
-      if (m.boss) { bossesFelled++; popFx(m.x, m.y, true); beep(110, 0.2, "sawtooth", 0.14); beep(70, 0.24, "sawtooth", 0.1, 0.05); }
+      if (m.boss) { bossesFelled++; popFx(m.x, m.y, true); beep(110, 0.2, "sawtooth", 0.14); beep(70, 0.24, "sawtooth", 0.1, 0.05); playEmote("win"); }
       else { popFx(m.x, m.y, false); beep(640 + Math.random() * 240, 0.05, "square", 0.09); beep(190, 0.07, "square", 0.06, 0.02); }
       if (!m.boss && Math.random() < 0.17) playPoe("blightPop");
       m.el.remove();
