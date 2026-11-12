@@ -460,6 +460,20 @@
   }
   #adminHub:hover { filter:brightness(1.2); }
 
+  /* ============ EMOTE PLAYER ============ */
+  #emotes { position:fixed; right:18px; bottom:18px; z-index:96; display:flex; flex-direction:column; align-items:flex-end; gap:10px; pointer-events:none; }
+  .emote {
+    background:rgba(10,12,17,.9); border:1px solid #2a3140; border-radius:12px;
+    padding:10px 12px; text-align:center;
+    transform:translateY(24px) scale(.7); opacity:0;
+    transition:transform .28s cubic-bezier(.2,2,.4,1), opacity .28s ease;
+    box-shadow:0 8px 24px rgba(0,0,0,.5);
+  }
+  .emote.in { transform:translateY(0) scale(1); opacity:1; }
+  .emote.out { transform:translateY(10px) scale(.85); opacity:0; }
+  .emote img { max-width:180px; max-height:180px; display:block; border-radius:8px; }
+  .emote .emoteTxt { color:#ffd94a; font-weight:800; font-size:13px; letter-spacing:1px; margin-top:6px; text-shadow:0 1px 2px rgba(0,0,0,.8); }
+
   /* ============ HARVEST GROVE ============ */
   #harvest { background:#07130a; z-index:60; overflow:hidden; }
   #harvestBg {
@@ -792,6 +806,7 @@
   </div>
 </div>
 <div id="adminBar" class="hidden"><button id="adminHub">HUB</button></div>
+<div id="emotes"></div>
 
 <!-- ==================== HARVEST GROVE ==================== -->
 <div id="harvest" class="screen hidden">
@@ -1200,6 +1215,15 @@ const CONFIG = {
     bossLabel: "BOSSES FELLED",
     winSub: "purified. all of it. she is taking full credit.",
     cont: "CONTINUE",
+  },
+
+  // emote player: playEmote("ezguccio1", "GG EZ") pops a picture in the
+  // bottom right with the text under it, then leaves on its own. images live
+  // in assets/emotes/ and the extension is optional.
+  emotes: {
+    path: "assets/emotes/",
+    duration: 2,     // seconds on screen
+    maxSize: 180,    // px cap for the picture
   },
 
   // the harvest grove, tied to the round flagged harvest: true (the first
@@ -2403,6 +2427,35 @@ function runPhase(name, goNext) {
   return false; // unknown mechanic
 }
 
+// ---------- emote player ----------
+// playEmote("ezguccio1", "GG EZ") pops a picture bottom right with the text
+// under it, then leaves on its own. bare names probe the usual extensions.
+// returns a dismiss function in case a caller wants it gone early.
+function playEmote(emote, text) {
+  const E = CONFIG.emotes || {};
+  const d = document.createElement("div");
+  d.className = "emote";
+  const img = document.createElement("img");
+  img.alt = emote; img.draggable = false;
+  img.style.maxWidth = img.style.maxHeight = (E.maxSize || 180) + "px";
+  const cap = document.createElement("div");
+  cap.className = "emoteTxt"; cap.textContent = text || "";
+  d.append(img, cap);
+  $("emotes").appendChild(d);
+  const kill = () => { d.classList.add("out"); setTimeout(() => d.remove(), 350); };
+  const timer = setTimeout(kill, (E.duration || 2) * 1000);
+  let i = 0;
+  const exts = ["", ".webp", ".png", ".gif", ".jpg", ".jpeg"];
+  (function trySrc() {
+    if (i >= exts.length) { clearTimeout(timer); d.remove(); return; } // no such emote, quiet exit
+    img.onload = () => { d.classList.add("in"); beep(880, 0.06, "square", 0.07); };
+    img.onerror = () => { i++; trySrc(); };
+    img.src = (E.path || "assets/emotes/") + emote + exts[i];
+  })();
+  return kill;
+}
+window.playEmote = playEmote; // console testing: playEmote("ezguccio1", "GG EZ")
+
 // the dev hub: ?phase=admin lists every mechanic, each one lands back here
 // when it finishes. the HUB button in the corner works mid-mechanic too.
 const ADMIN_ITEMS = [
@@ -2414,6 +2467,7 @@ const ADMIN_ITEMS = [
   ["call", "DIABETIC CALL"],
   ["blight", "BLIGHT DEFENSE"],
   ["maven", "MAVEN MEMORY"],
+  ["emote", "EMOTE TEST"],
 ];
 function showAdmin() {
   ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call"].forEach((id) => {
@@ -2424,7 +2478,11 @@ function showAdmin() {
     ADMIN_ITEMS.forEach(([key, label]) => {
       const b = document.createElement("button");
       b.textContent = label; b.dataset.phase = key;
-      b.onclick = () => { $("admin").classList.add("hidden"); runPhase(key, showAdmin); };
+      b.onclick = () => {
+        if (key === "emote") { playEmote("ezguccio1", "GG EZ"); return; } // stays in the hub
+        $("admin").classList.add("hidden");
+        runPhase(key, showAdmin);
+      };
       grid.appendChild(b);
     });
   }
