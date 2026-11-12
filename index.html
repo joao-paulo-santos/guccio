@@ -437,6 +437,69 @@
   #blightBtn:hover { filter:brightness(1.08); }
   #blightFine { margin-top:14px; color:#4a5162; font-size:11px; }
 
+  /* ============ HARVEST GROVE ============ */
+  #harvest { background:#07130a; z-index:60; overflow:hidden; }
+  #harvestBg {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    height:100vh; width:100vw; object-fit:cover; opacity:.5; pointer-events:none;
+  }
+  #harvestBox { position:relative; z-index:2; text-align:center; width:min(94vw,860px); }
+  #harvestTitle {
+    font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#b9e26b;
+    font-size:clamp(20px,3.6vw,30px); text-shadow:0 0 22px rgba(150,220,80,.45);
+  }
+  #harvestSub { color:#8b93a3; font-size:13px; margin-top:8px; min-height:1.4em; }
+  #harvestMain { display:flex; gap:22px; justify-content:center; align-items:stretch; margin-top:18px; }
+  #harvestInv {
+    width:300px; background:rgba(10,18,12,.82); border:1px solid #23391f; border-radius:12px;
+    padding:14px; text-align:left;
+  }
+  #harvestInvTitle { color:#5b6275; font-size:10px; letter-spacing:3px; margin-bottom:10px; }
+  #harvestInvGrid { display:flex; flex-wrap:wrap; gap:8px; }
+  #harvestInvGrid:empty::after { content:"nothing left to stake. the grove is patient."; color:#3f4553; font-size:11.5px; }
+  .hvCard {
+    width:86px; background:#171b23; border:1px solid #2c4a22; border-radius:8px;
+    padding:7px 4px 8px; text-align:center; cursor:pointer; user-select:none;
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .hvCard:hover { transform:translateY(-2px); box-shadow:0 0 12px rgba(150,220,80,.35); }
+  .hvCard .art { font-size:22px; line-height:1; }
+  .hvCard .art.pic { width:100%; height:38px; background-size:contain; background-position:center; background-repeat:no-repeat; }
+  .hvCard .nm { font-size:9px; font-weight:700; line-height:1.25; color:#e6e9f0; margin-top:6px; }
+  #harvestCraft { width:340px; display:flex; flex-direction:column; align-items:center; }
+  #harvestSquare {
+    width:100%; min-height:150px; border:2px dashed #4a7a33; border-radius:12px;
+    background:rgba(18,30,16,.75); display:flex; flex-wrap:wrap; gap:8px;
+    padding:12px; align-content:flex-start; justify-content:center;
+  }
+  #harvestSquare:empty::after {
+    content:"the plot waits for a seed"; color:#3f4553; font-size:11.5px;
+    align-self:center;
+  }
+  #harvestSquare .hvCard { border-color:#8fbf4d; box-shadow:0 0 10px rgba(150,220,80,.25); }
+  #harvestOdds { color:#9fd45e; font-size:12px; letter-spacing:1px; margin-top:10px; min-height:1.3em; }
+  #harvestLifeforce {
+    display:flex; align-items:center; gap:8px; margin-top:10px;
+    color:#c9d7b0; font-size:12px;
+  }
+  #harvestLfImg { width:26px; height:26px; object-fit:contain; }
+  #harvestBtn {
+    margin-top:14px; padding:12px 44px; font-size:15px; font-weight:800; letter-spacing:3px;
+    border-radius:10px; cursor:pointer; color:#0d1a04;
+    background:linear-gradient(180deg,#c9f28a,#8ec33f); border:1px solid #6b902c; box-shadow:0 4px 0 #527020;
+    animation:btnpulse .7s ease infinite alternate;
+  }
+  #harvestBtn:disabled { opacity:.4; cursor:default; animation:none; }
+  #harvestResult { color:#e8f5d0; font-size:15px; font-weight:700; margin-top:12px; min-height:1.4em; text-shadow:0 0 12px rgba(150,220,80,.5); }
+  #harvestDone {
+    margin-top:14px; padding:12px 34px; font-size:14px; font-weight:800; letter-spacing:2px;
+    border-radius:10px; cursor:pointer; color:#1a0033;
+    background:linear-gradient(180deg,#d9b3ff,#a86bff); border:1px solid #7a48c9; box-shadow:0 4px 0 #5d36a0;
+    animation:btnpulse .7s ease infinite alternate;
+  }
+  #harvestFine { margin-top:12px; color:#4a5162; font-size:11px; }
+  @media (max-width: 760px) { #harvestMain { flex-direction:column; align-items:center; } }
+
   /* ============ VAAL / ATZIRI ============ */
   #vaal { background:#0a0709; z-index:60; overflow:hidden; }
   #vaalBg {
@@ -699,6 +762,33 @@
   </div>
 </div>
 
+<!-- ==================== HARVEST GROVE ==================== -->
+<div id="harvest" class="screen hidden">
+  <img id="harvestBg" alt="" draggable="false">
+  <div id="harvestBox">
+    <div id="harvestTitle">THE SACRED GROVE</div>
+    <div id="harvestSub">stake what you own. the craft gives. the craft takes.</div>
+    <div id="harvestMain">
+      <div id="harvestInv">
+        <div id="harvestInvTitle">YOUR STASH</div>
+        <div id="harvestInvGrid"></div>
+      </div>
+      <div id="harvestCraft">
+        <div id="harvestSquare"></div>
+        <div id="harvestOdds"></div>
+        <div id="harvestLifeforce">
+          <img id="harvestLfImg" alt="" draggable="false">
+          <span id="harvestLfTxt">1500 Vivid Crystallised Lifeforce</span>
+        </div>
+        <button id="harvestBtn">CRAFT</button>
+        <div id="harvestResult"></div>
+      </div>
+    </div>
+    <button id="harvestDone" class="hidden">CONTINUE</button>
+    <div id="harvestFine">the lifeforce is synthetic. the games are not.</div>
+  </div>
+</div>
+
 <!-- ==================== ULTIMATUM INTERLUDE ==================== -->
 <div id="trial" class="screen hidden">
   <img id="trialBg" alt="" draggable="false">
@@ -825,37 +915,6 @@ const CONFIG = {
   // nearMiss is the item that creeps past the marker RIGHT before the prize.
   rounds: [
     {
-      caseName: "THE DEGEN CRATE",
-      caseNote: "warm up those wrists, clicking is the whole skill tree here",
-      prize: {
-        name: "Like a Dragon: Pirate Yakuza in Hawaii",
-        sub:  "steam key",
-        emoji:"🏴‍☠️",
-        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3061810/header.jpg",
-        tier: "gold",
-        flavor: "goro majima personally endorses this birthday. the shark is canon btw.",
-        // win sound: dame da ne (baka mitai, he knows the words)
-        sound: "https://www.myinstants.com/media/sounds/dame-da-ne.mp3",
-        // PUT YOUR KEY HERE. two options:
-        //   a) lazy: paste the key directly in these quotes (visible if he reads the repo)
-        //   b) smart: open the live page as ?password=x&person=guccio, get past
-        //      the gate, F12 console, run await encodeKey("AAAAA-BBBBB-CCCCC")
-        //      and paste the enc:... string here. it only decrypts for that
-        //      exact url. friends testing without person=guccio get noise.
-        key: "PASTE-KEY-1-HERE",
-        // who paid for this gift, shown on the win screen. friends adding gifts: your name here
-        from: ["Ecila", "Patty"],
-      },
-      nearMiss: {
-        name: "★ Karambit | Doppler",
-        sub:  "factory new. it was never real.",
-        emoji:"🔪",
-        img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rYXJhbWJpdF9hbV9kb3BwbGVyX3BoYXNlMV9saWdodC43Yzg4NzIwMTBiMzRjM2EwZTk2OTY2ZTM1OGRkMjZjYThhOGJmYWI0LnBuZw--/auto/auto/85/notrim/cd0536c877b161e894e77d613840c506.webp",
-        tier: "red",
-      },
-      landAt: 48,   // where the strip stops, higher = longer spin
-    },
-    {
       caseName: "THE HIGH ROLLER CRATE",
       caseNote: "the house always wins. the house did not get that memo today",
       prize: {
@@ -867,7 +926,7 @@ const CONFIG = {
         flavor: "a game about you. finally some representation.",
         // win sound: einhar says "That's a juicy one!"
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/betrayalleague/einhar/ef_14_b.ogg",
-        key: "PASTE-KEY-2-HERE",
+        key: "enc:aAZ6ankYD2F2PwVOamB9fSs=",
         from: ["Ecila", "Patty"],
       },
       nearMiss: {
@@ -891,7 +950,7 @@ const CONFIG = {
         flavor: "loot valhalla until sunrise. pace yourself, your back is not 20 anymore.",
         // win sound: maven says "A rare treat."
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_85_05_a.ogg",
-        key: "PASTE-KEY-3-HERE",
+        key: "enc:dHR6fW8YfGNsKWNOdnpudiA=",
         from: ["Ecila", "Patty"],
       },
       nearMiss: {
@@ -934,6 +993,31 @@ const CONFIG = {
         tier:"red",
       },
       landAt: 51,
+    },
+    {
+      caseName: "THE DRAGON'S DEN",
+      caseNote: "the whole like a dragon family is watching this one",
+      harvest: true, // winning this opens the sacred grove, see CONFIG.harvest
+      prize: {
+        name: "Yakuza: Like a Dragon",
+        sub:  "steam key",
+        emoji:"🦎",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1235140/header.jpg",
+        tier: "gold",
+        flavor: "ichiban walked so a pirate could sail. el psy kongroo, old man.",
+        // win sound: dame da ne (baka mitai, he knows the words)
+        sound: "https://www.myinstants.com/media/sounds/dame-da-ne.mp3",
+        key: "enc:dnVwaQMYdX50IG9OaHB9C1c=",
+        from: ["Ecila", "Patty"],
+      },
+      nearMiss: {
+        name: "★ Karambit | Doppler",
+        sub:  "factory new. it was never real.",
+        emoji:"🔪",
+        img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rYW1hYml0X2FtX2RvcGxlcl9waGFzZTFfbGlnaHQuN2M4ODcyMDEwYjM0YzNhMGU5Njk2NmUzNThkZDJhNmM4YThmYmFiNC5wbmc--/auto/auto/85/notrim/cd0536c877b161e894e77d613840c506.webp",
+        tier: "red",
+      },
+      landAt: 55,
     },
     {
       caseName: "THE DERBY CRATE",
@@ -1087,6 +1171,43 @@ const CONFIG = {
     cont: "CONTINUE",
   },
 
+  // the harvest grove, tied to the round flagged harvest: true (the first
+  // like a dragon). he drops that one from a crate, then stakes his yakuza
+  // stash here: each craft rolls between 0 and double the stake, overflow
+  // caps at the full set of four. only ends on owning all four or nothing.
+  // games missing a round field can never drop from crates, harvest only.
+  // a lost crate game simply goes back into the crate pool, the grove is
+  // generous like that. keys below are sealed for ?person=guccio.
+  harvest: {
+    bg: "assets/harvest.jpeg",
+    title: "THE SACRED GROVE",
+    sub: "stake what you own. the craft gives. the craft takes.",
+    lifeforce: 1500,
+    lifeforceLabel: "Vivid Crystallised Lifeforce",
+    lifeforceImg: "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvSGFydmVzdC9WaXZpZExpZmVmb3JjZSIsInNjYWxlIjoxfV0/a355b8a5a2/VividLifeforce.png",
+    craft: "CRAFT",
+    oddsLabel: "STAKED",              // "STAKED 2: the craft yields 0 - 4"
+    yieldLabel: "the craft yields",
+    cappedNote: "the grove only grows four",
+    winSub: "all four. the grove approves.",
+    loseSub: "the craft took everything. the crates will provide again.",
+    cont: "CONTINUE",
+    games: [
+      { name: "Yakuza: Like a Dragon",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1235140/header.jpg", emoji: "🦎",
+        key: "enc:dnVwaQMYdX50IG9OaHB9C1c=" },
+      { name: "Like a Dragon: Pirate Yakuza in Hawaii",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3061810/header.jpg", emoji: "🏴‍☠️",
+        key: "enc:dgFvDX0YfgRhMWFOcnV1fiI=" },
+      { name: "Like a Dragon: Infinite Wealth",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2072450/header.jpg", emoji: "💸",
+        key: "enc:cHh/f28Ye3NqKWdOCnx0Dyc=" },
+      { name: "Like a Dragon Gaiden: The Man Who Erased His Name",
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2375550/header.jpg", emoji: "🕶️",
+        key: "enc:AH1uaAMYfQV/N21Oem54dlA=" },
+    ],
+  },
+
   trial: {
     or: "OR",
     rewardsLabel: "rewards gained",
@@ -1133,6 +1254,8 @@ const CONFIG = {
     // the whole like a dragon family shows up to haunt the real pirate yakuza gift
     { name:"Yakuza: Like a Dragon",  sub:"ichiban thinks this is dragon quest. honestly, same", emoji:"🦎",
       img:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1235140/header.jpg", tier:"red" },
+    { name:"Like a Dragon: Pirate Yakuza in Hawaii", sub:"majima is sailing somewhere. probably to you.", emoji:"🏴‍☠️",
+      img:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3061810/header.jpg", tier:"red" },
     { name:"Like a Dragon: Infinite Wealth", sub:"infinite wealth, none of it yours", emoji:"💸",
       img:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2072450/header.jpg", tier:"red" },
     { name:"Yakuza Kiwami 3 & Dark Ties", sub:"the most violent game about an orphanage", emoji:"🏫",
@@ -1290,6 +1413,33 @@ const CONFIG = {
     blightWin: [
       "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_12.ogg",    // success! god did it. you were of some help.
       "https://cdn.poedb.tw/audio/dialogue/npc/cassia/cas_24.ogg",    // we destroyed the source of the blight!
+    ],
+    // the shaper judges the harvest grove. same voice bank rules as always
+    harvestGreet: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh03a_shaperrealmintro1.ogg", // i see you, little mouse. run along!
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01e_encounter3.ogg",       // foundations of a new empire, behold!
+    ],
+    harvestCraft: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh03l_afterfirstgauntlet_a.ogg", // behold the face of your unmaking!
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh03e_miniboss2.ogg",           // you tamper with things you do not understand.
+    ],
+    harvestGain: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01c_encounter2.ogg",  // the void nourishes, elevates, perfects.
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh30_30_tower.ogg",     // we ascend to great heights to commit low acts.
+    ],
+    harvestKeep: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01-genericintro03.ogg", // you reek of imperfection.
+    ],
+    harvestLoseRoll: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01-genericintro06.ogg", // you do not belong here.
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh30_71_bazaar.ogg",     // greed is the only god here.
+    ],
+    harvestLoseAll: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh19.ogg",        // failure. ambivalence. death. a final abyss.
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01d_outro2.ogg", // another lost... no matter. the void will provide.
+    ],
+    harvestWinAll: [
+      "https://cdn.poedb.tw/audio/dialogue/npc/shapernarrator/sh01-genericoutro04.ogg", // savour this moment of victory.
     ],
     // maven closes the show: "A dazzling display of survival."
     maven:   "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_169_05_a.ogg",
@@ -1859,6 +2009,149 @@ function maybeShowBlight(goNext) {
   sayCount();
 }
 
+// the harvest grove: the stash gamble. he enters holding the like a dragon
+// he just dropped from its crate, stakes any of it, and every craft rolls
+// between zero and double the stake, capped at the full set of four games.
+// the grove only lets him leave owning everything or nothing. a total loss
+// puts the crate game back in the pool, so the crates always provide again.
+function maybeShowHarvest(round, goNext) {
+  const H = CONFIG.harvest || {};
+  const games = (H.games && H.games.length) ? H.games : [];
+  const TOTAL = games.length;
+  const screen = $("harvest");
+  const sub = $("harvestSub"), result = $("harvestResult"), odds = $("harvestOdds");
+  const invGrid = $("harvestInvGrid"), square = $("harvestSquare");
+  $("harvestTitle").textContent = H.title || "THE SACRED GROVE";
+  sub.textContent = H.sub || "stake what you own.";
+  result.textContent = "";
+  odds.textContent = "";
+  $("harvestBg").src = H.bg || "";
+  $("harvestLfImg").src = H.lifeforceImg || "";
+  $("harvestLfTxt").textContent = (H.lifeforce || 1500) + " " + (H.lifeforceLabel || "Vivid Crystallised Lifeforce");
+  const btn = $("harvestBtn");
+  btn.textContent = H.craft || "CRAFT";
+  btn.disabled = false;
+  $("harvestDone").classList.add("hidden");
+  gameEl.classList.add("hidden");
+  finalEl.classList.add("hidden");
+  screen.classList.remove("hidden");
+  screen.dataset.phase = "stake";
+  playPoe("harvestGreet"); // "i see you, little mouse..."
+
+  // what he owns right now. entry state: the game that just dropped
+  const owned = new Set();
+  const start = games.find((g) => g.name === round.prize.name) || games[0];
+  if (start) owned.add(start.name);
+  const staked = new Set();
+
+  function card(g, where, onClick) {
+    const d = document.createElement("div");
+    d.className = "hvCard";
+    const a = document.createElement("div");
+    a.className = "art" + (g.img ? " pic" : "");
+    if (g.img) a.style.backgroundImage = 'url("' + g.img + '")';
+    else a.textContent = g.emoji || "?";
+    const n = document.createElement("div");
+    n.className = "nm"; n.textContent = g.name;
+    d.append(a, n);
+    if (onClick) d.addEventListener("click", onClick);
+    where.appendChild(d);
+  }
+  function render() {
+    if (staked.size === 0 && owned.size > 0) {
+      // with a single game left it stakes itself, the grove insists
+      staked.add([...owned][0]);
+    }
+    invGrid.innerHTML = ""; square.innerHTML = "";
+    games.forEach((g) => {
+      if (staked.has(g.name))
+        card(g, square, () => { if (staked.size > 1) { staked.delete(g.name); render(); } }); // one always stays planted
+      else if (owned.has(g.name))
+        card(g, invGrid, () => { staked.add(g.name); render(); });
+    });
+    odds.textContent = (H.oddsLabel || "STAKED") + " " + staked.size + ": " +
+                       (H.yieldLabel || "the craft yields") + " 0 - " + Math.min(2 * staked.size, TOTAL);
+    screen.dataset.owned = String(owned.size);
+    screen.dataset.staked = String(staked.size);
+    screen.dataset.set = games.map((g) => (owned.has(g.name) ? "1" : "0")).join("");
+  }
+  function grant(list) { list.forEach((g) => owned.add(g.name)); }
+  function endGame(win) {
+    screen.dataset.phase = win ? "won" : "lost";
+    playPoe(win ? "harvestWinAll" : "harvestLoseAll");
+    sub.textContent = win ? (H.winSub || "all of them.") : (H.loseSub || "the craft took everything.");
+    const done = $("harvestDone");
+    done.textContent = H.cont || "CONTINUE";
+    done.classList.remove("hidden");
+    done.onclick = () => { screen.classList.add("hidden"); goNext(); };
+  }
+  function loseAll() {
+    // the crate game goes back into the shuffle, nothing is truly lost
+    const wk = wonKeys.indexOf(round);
+    if (wk >= 0) wonKeys.splice(wk, 1);
+    Array.from($("inv").querySelectorAll(".invItem")).forEach((it) => {
+      if (it.querySelector(".nm").textContent === round.prize.name) it.remove();
+    });
+    requeueVaalRound(round); // same slot rules: later, clear of the pinned tail
+    endGame(false);
+  }
+  function winAll() {
+    jingle(); // take it all, take it all
+    // everything won: the harvest-only games join the final loot
+    games.forEach((g) => {
+      if (!wonKeys.some((r) => r.prize.name === g.name)) {
+        wonKeys.push({
+          caseName: "THE SACRED GROVE",
+          prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img,
+                   tier: "gold", key: g.key, from: round.prize.from },
+        });
+      }
+    });
+    endGame(true);
+  }
+
+  btn.onclick = () => {
+    if (screen.dataset.phase !== "stake" || staked.size === 0) return;
+    screen.dataset.phase = "craft";
+    btn.disabled = true;
+    playPoe("harvestCraft"); // "behold the face of your unmaking"
+    beep(420, 0.1, "sine", 0.1); beep(560, 0.1, "sine", 0.1, 0.1); beep(700, 0.14, "sine", 0.1, 0.2);
+    setTimeout(() => {
+      const s = staked.size;
+      const before = owned.size;
+      const roll = Math.floor(Math.random() * (2 * s + 1)); // 0 to double, inclusive
+      const safe = new Set([...owned].filter((nm) => !staked.has(nm))); // never at risk
+      const raw = safe.size + roll;
+      const capped = raw > TOTAL;
+      const final = Math.min(raw, TOTAL);
+      // the plot consumes the stake and returns `roll` games. a roll equal to
+      // the stake hands the exact staked games back, anything else is drawn
+      // from the staked pile plus everything still missing
+      let drawn;
+      if (roll === s) drawn = games.filter((g) => staked.has(g.name));
+      else {
+        const pot = games.filter((g) => !safe.has(g.name)); // staked + missing
+        shuffle(pot);
+        drawn = pot.slice(0, final - safe.size);
+      }
+      staked.clear();
+      owned.clear();
+      grant(drawn);
+      safe.forEach((nm) => owned.add(nm));
+      result.textContent = (H.yieldLabel || "the craft yields") + " " + final +
+                           (capped ? ". " + (H.cappedNote || "") : "");
+      if (final === TOTAL) { render(); winAll(); return; }
+      if (final === 0) { render(); loseAll(); return; }
+      if (final > before) jingle(); // the plot was kind
+      playPoe(final > before ? "harvestGain" : (final === before ? "harvestKeep" : "harvestLoseRoll"));
+      screen.dataset.phase = "stake";
+      btn.disabled = false;
+      render();
+    }, 900);
+  };
+  render();
+}
+
 function maybeShowInterlude(roundIndex, goNext) {
   playPoe("tujen");
   const I = CONFIG.interlude;
@@ -2046,6 +2339,13 @@ function startPhase(phase) {
       wonKeys.push(won);
       if (r.redrops) wonKeys.push(Object.assign({}, r)); // the base game drops again
     });
+    // and the grove at full victory: every harvest-only game joins the pile
+    ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
+      if (!wonKeys.some((w) => w.prize.name === g.name)) {
+        wonKeys.push({ caseName: "THE SACRED GROVE",
+          prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img, tier: "gold", key: g.key, from: ["Ecila", "Patty"] } });
+      }
+    });
     showFinal();
     return;
   }
@@ -2059,6 +2359,14 @@ function startPhase(phase) {
     return;
   }
   if (phase === "tujen") { maybeShowInterlude(0, backToGame); return; }
+  if (phase === "harvest") {
+    const hsrc = CONFIG.rounds.find((r) => r.harvest) || CONFIG.rounds[0];
+    const hclone = Object.assign({}, hsrc); // throwaway, dev crafts poison nothing
+    hclone.prize = Object.assign({}, hsrc.prize);
+    roundIdx = CONFIG.rounds.indexOf(hsrc);
+    maybeShowHarvest(hclone, backToGame);
+    return;
+  }
   if (phase === "trial") { maybeShowTrial(backToGame); return; }
   if (phase === "blight") { maybeShowBlight(backToGame); return; }
   if (phase === "maven") { maybeShowMaven(backToGame); return; }
@@ -2217,10 +2525,15 @@ function artEl(item) {
 // the drama slot right before it, and prizes already won never come back.
 function dropPool(excludeNames) {
   const ex = new Set(excludeNames || []);
-  // dedupe by name: a requeued vaal round exists twice in CONFIG.rounds
+  // dedupe by name: a requeued vaal round exists twice in CONFIG.rounds, and
+  // a joke filler can share a name with a live prize (yakuza: like a dragon)
   const prizes = [...new Map(CONFIG.rounds.map((r) => [r.prize.name, r.prize])).values()].filter((p) => !ex.has(p.name));
   const nears = [...new Map(CONFIG.rounds.filter((r) => r.nearMiss).map((r) => [r.nearMiss.name, r.nearMiss])).values()].filter((n) => !ex.has(n.name));
-  return shuffle([...CONFIG.jokeItems, ...nears, ...prizes]);
+  // jokes filter by name too: a joke that shares a name with the current or
+  // a won prize hides alongside it, no twins on the reel
+  const jokes = CONFIG.jokeItems.filter((j) => !ex.has(j.name));
+  const pool = [...new Map([...jokes, ...nears, ...prizes].map((it) => [it.name, it])).values()];
+  return shuffle(pool);
 }
 // what stays out of a given round's fillers: everything won so far,
 // plus this round's prize and its near miss
@@ -2288,7 +2601,8 @@ function spin() {
   // and the only copy of the prize on the reel is the one that lands on the marker.
   stripEl.innerHTML = "";
   const cards = [];
-  const fillers = dropPool(roundExclusions(roundIdx));
+  const exSet = new Set(roundExclusions(roundIdx)); // fillers and tension cards respect the same exclusions
+  const fillers = dropPool([...exSet]);
   let poolCursor = 0;
   const WINDOW = 8;
   const recent = []; // names used in the last WINDOW-1 slots
@@ -2305,8 +2619,8 @@ function spin() {
     return fillers[0]; // pool is far bigger than the window, never reached
   }
   function pickTension(a, b) {
-    const pool = CONFIG.jokeItems.filter((j) => (j.tier === a || j.tier === b) && allowed(j));
-    return pool[Math.floor(Math.random() * pool.length)] || randomTier(a, b);
+    const pool = CONFIG.jokeItems.filter((j) => (j.tier === a || j.tier === b) && allowed(j) && !exSet.has(j.name));
+    return pool[Math.floor(Math.random() * pool.length)] || pickFiller();
   }
   // the landing is a coin toss: barely onto the prize from one side, or hung
   // right at the far border like it almost went over. the near miss always
@@ -2348,10 +2662,6 @@ function spin() {
     else settle();
   }
 
-  function randomTier(a, b) {
-    const pool = CONFIG.jokeItems.filter(j => j.tier === a || j.tier === b);
-    return pool[Math.floor(Math.random() * pool.length)] || fillers[0];
-  }
 
   function settle() {
     stripEl.style.transform = "translateX(" + tx1 + "px)";
@@ -2451,6 +2761,7 @@ $("nextBtn").addEventListener("click", () => {
     // straight into the diabetic call (first interlude only), then cassia's
     // blight defense, then the maven's memory game, tujen owns the rest
     if (currentRound.vaal && currentRound.upgrade) maybeShowVaal(currentRound, () => loadRound(next));
+    else if (currentRound.harvest) maybeShowHarvest(currentRound, () => loadRound(next));
     else if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => maybeShowCall(() => loadRound(next))); }
     else if (!blightDone) { blightDone = true; maybeShowBlight(() => loadRound(next)); }
     else if (!mavenDone) { mavenDone = true; maybeShowMaven(() => loadRound(next)); }
@@ -2561,7 +2872,7 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
   // everything rides in the url:
   //   ?password=x  unlocks on its own, no retyping every reload
   //   ?person=x    second factor for the key vault, only guccio gets real keys
-  //   ?phase=x     dev shortcut: reward, vaal, tujen, trial, blight or maven
+  //   ?phase=x     dev shortcut: reward, vaal, harvest, tujen, trial, blight or maven
   const params = new URLSearchParams(window.location.search);
   URL_PERSON = params.get("person") || "";
   const urlPass = params.get("password");
