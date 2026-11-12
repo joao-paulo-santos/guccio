@@ -1603,6 +1603,9 @@ function maybeShowTrial(goNext) {
   wonKeys.forEach((rk) => inv.appendChild(makeCard(rk.prize))); // real cards, like everywhere else
   $("trialCount").textContent = wonKeys.length + " " + (T.rewardsLabel || "rewards gained");
   $("trialTake").classList.remove("gone"); // fresh trap every visit
+  $("trialTake").disabled = false; // a previous abduction does not carry over
+  $("trialTake").style.transform = ""; $("trialTake").style.transition = "";
+  document.querySelectorAll(".ghostMarco").forEach((g) => g.remove()); // no stray ghosts
   gameEl.classList.add("hidden");
   finalEl.classList.add("hidden");
   $("trial").classList.remove("hidden");
