@@ -280,7 +280,13 @@
     color:#1a1400; background:linear-gradient(180deg,#ffdf6e,#f0b422); border:1px solid #b98a12; box-shadow:0 4px 0 #8a650b;
   }
   #trialTake:hover { filter:brightness(1.07); }
-  #trialTake.gone { visibility:hidden; } /* vanished, but the layout holds its ground */
+  #trialTake.gone { visibility:hidden; } /* abducted, but the layout holds its ground */
+  #trialTake:disabled { cursor:default; }
+  .ghostMarco {
+    position:fixed; left:0; top:0; height:120px; z-index:97; pointer-events:none;
+    transition:transform 1.1s cubic-bezier(.4,0,.3,1);
+    filter:drop-shadow(0 8px 16px rgba(0,0,0,.65));
+  }
   #trialOr {
     align-self:center; font-family:Impact,"Arial Black",sans-serif; color:#d8b36a;
     font-size:clamp(40px,7vw,72px); letter-spacing:6px; padding:0 10px;
@@ -1601,8 +1607,42 @@ function maybeShowTrial(goNext) {
   finalEl.classList.add("hidden");
   $("trial").classList.remove("hidden");
   $("trialTake").onclick = () => {
+    if ($("trialTake").disabled) return;
     playPoe("trialEager"); // "don't get too eager"
-    $("trialTake").classList.add("gone");
+    const btn = $("trialTake");
+    btn.disabled = true; // dead to further clicks, still very visible
+    // ghost marco slides in from the left, grabs the button, drags it away
+    const ghost = document.createElement("img");
+    ghost.src = "assets/emotes/ghostmarco.png";
+    ghost.alt = "ghost marco"; ghost.draggable = false;
+    ghost.className = "ghostMarco";
+    document.body.appendChild(ghost);
+    const r = btn.getBoundingClientRect();
+    const centerY = r.top + r.height / 2 - 60; // ghost center meets the button
+    ghost.style.top = centerY + "px";
+    ghost.style.transform = "translateX(-300px)";
+    requestAnimationFrame(() => {
+      let grabbed = false;
+      const grab = () => {
+        if (grabbed) return;
+        grabbed = true;
+        const gw = ghost.getBoundingClientRect().width || 120;
+        ghost.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
+        setTimeout(() => { // got it. now the long way home, button in tow
+          btn.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
+          btn.style.transform = "translateX(-130vw)";
+          ghost.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
+          ghost.style.transform = "translateX(-300px)";
+          setTimeout(() => { // layout keeps the hole, the button itself is gone
+            btn.classList.add("gone");
+            btn.style.transform = ""; btn.style.transition = "";
+            ghost.remove();
+          }, 1300);
+        }, 1250);
+      };
+      ghost.onload = grab;
+      setTimeout(grab, 300); // environments that never load images still get the show
+    });
   };
   $("trialAccept").onclick = () => {
     beep(680, 0.09, "square", 0.1);
