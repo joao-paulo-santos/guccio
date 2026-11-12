@@ -511,6 +511,9 @@
     box-shadow:0 2px 8px rgba(0,0,0,.5); pointer-events:none;
   }
   #adminFillersGrid .card { cursor:default; }
+  #adminNearGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+  #adminNearGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
+  #adminNearGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(235,75,75,.4); }
   #adminRewardsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
   #adminRewardsGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(255,207,63,.4); }
   #adminRewardsBack {
@@ -916,9 +919,11 @@
     <div id="adminRewardsSub">click any reward to preview its win effect, sound and key reveal included. the smaller card beside each prize is its near miss.</div>
     <div id="rwTabs">
       <button id="rwTabPrizes" class="on">PRIZES</button>
+      <button id="rwTabNear">NEAR MISSED</button>
       <button id="rwTabFillers">FILLERS</button>
     </div>
     <div id="adminRewardsGrid"></div>
+    <div id="adminNearGrid" class="hidden"></div>
     <div id="adminFillersGrid" class="hidden"></div>
     <button id="adminRewardsBack">BACK TO HUB</button>
   </div>
@@ -1467,7 +1472,8 @@ const CONFIG = {
     { name:"Steam Wallet Code",      sub:"5 EUR (already redeemed)",      emoji:"💳", tier:"purple" },
     { name:"AWP | Dragon Lore",      sub:"this never drops. never.",      emoji:"🔫", img:"https://skins-cdn.hltv.org/skin/Cyz4AWdqXht6NWHlj9sWtl.png", tier:"red"    },
     { name:"Free Spins x50",         sub:"wagering req: x999",            emoji:"🎰", tier:"pink"   },
-    { name:"Welcome Bonus",          sub:"200 percent up to 0 EUR",       emoji:"💰", tier:"pink"   },
+    { name:"Kingdom Come: Deliverance", sub:"you died of starvation, part one", emoji:"🐴",
+      img:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/379430/header.jpg", tier:"pink" },
     { name:"STRANGER THAN HEAVEN",   sub:"nagoshi left and it got stranger", emoji:"🚬",
       img:"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4260840/3e40b76faf9a3eafb4397dd51308eb2e48ac3660/header.jpg", tier:"red" },
     { name:"Gacha Pull x1",          sub:"SSR rate: 0.7 percent",         emoji:"🎴", tier:"blue"   },
@@ -2912,7 +2918,18 @@ function showAdminRewards() {
     c.onclick = () => openWinModal(r, true);
     grid.appendChild(c);
   });
-  // the second tab: the jokes that can never drop for real. anything
+  // the third tab: every near miss. clicking one previews the prize it
+  // haunts, the inverted way to look at the board
+  const nears = $("adminNearGrid");
+  CONFIG.rounds.filter((r) => r.nearMiss).forEach((r) => {
+    const c = makeCard(r.nearMiss);
+    c.onclick = () => {
+      playPrizeSound(r.prize.sound);
+      openWinModal(r, true, r.nearMiss);
+    };
+    nears.appendChild(c);
+  });
+  // the fillers tab: the jokes that can never drop for real. anything
   // winnable (round prizes, corruptions, grove games) is not a filler
   const winnable = new Set([
     ...CONFIG.rounds.map((r) => r.prize.name),
@@ -2920,16 +2937,19 @@ function showAdminRewards() {
     ...((CONFIG.harvest && CONFIG.harvest.games) || []).map((g) => g.name),
   ]);
   CONFIG.jokeItems.filter((j) => !winnable.has(j.name)).forEach((j) => fills.appendChild(makeCard(j)));
-  rwSwitchTab(true);
+  rwSwitchTab("prizes");
 }
-function rwSwitchTab(prizes) {
-  $("rwTabPrizes").classList.toggle("on", prizes);
-  $("rwTabFillers").classList.toggle("on", !prizes);
-  $("adminRewardsGrid").classList.toggle("hidden", !prizes);
-  $("adminFillersGrid").classList.toggle("hidden", prizes);
+function rwSwitchTab(tab) {
+  $("rwTabPrizes").classList.toggle("on", tab === "prizes");
+  $("rwTabNear").classList.toggle("on", tab === "nears");
+  $("rwTabFillers").classList.toggle("on", tab === "fillers");
+  $("adminRewardsGrid").classList.toggle("hidden", tab !== "prizes");
+  $("adminNearGrid").classList.toggle("hidden", tab !== "nears");
+  $("adminFillersGrid").classList.toggle("hidden", tab !== "fillers");
 }
-$("rwTabPrizes").onclick = () => rwSwitchTab(true);
-$("rwTabFillers").onclick = () => rwSwitchTab(false);
+$("rwTabPrizes").onclick = () => rwSwitchTab("prizes");
+$("rwTabNear").onclick = () => rwSwitchTab("nears");
+$("rwTabFillers").onclick = () => rwSwitchTab("fillers");
 $("adminRewardsBack").onclick = showAdmin;
 
 // the emote gallery: every category, every entry, click to preview it
