@@ -287,7 +287,8 @@
     transition:transform 1.1s cubic-bezier(.4,0,.3,1);
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.65));
   }
-  .walkFunny { animation:walkFunny .32s ease infinite alternate; transform-origin:50% 100%; }
+  .ghostThief img { display:block; height:120px; }
+  .ghostThief img.walkFunny { animation:walkFunny .32s ease infinite alternate; transform-origin:50% 100%; }
   @keyframes walkFunny {
     from { transform:translateY(0) rotate(-7deg); }
     to   { transform:translateY(-9px) rotate(6deg); }
@@ -2627,36 +2628,51 @@ function setEmoteSrc(img, file, onOk, onGone) {
   })();
 }
 
-// a ghost slides in from the left, grabs an element and carries it away.
-// both travel to the same target with the same curve, so nothing ever looks
-// chased: they leave as one. environments that never load images still work.
-function ghostAbduct(ghostSrc, el, done) {
-  const ghost = document.createElement("img");
-  ghost.src = ghostSrc; ghost.alt = "ghost"; ghost.draggable = false;
-  ghost.className = "ghostThief";
-  document.body.appendChild(ghost);
+// frame-driven translateX tween. driving both the ghost and the loot with
+// the same tween and the same delta is the only way they truly leave as one
+function tweenX(el, from, to, dur, done) {
+  const t0 = performance.now();
+  (function step(now) {
+    const t = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - t, 2.2); // brisk start, soft landing
+    el.style.transform = "translateX(" + (from + (to - from) * e) + "px)";
+    if (t < 1) requestAnimationFrame(step);
+    else if (done) done();
+  })(t0);
+}
+
+// a ghost slides in from the closest edge, grabs an element and carries it
+// away. the ghost is a wrapper (position) around its picture (optional walk
+// wobble), so animations and movement never fight over the transform.
+function ghostAbduct(ghostSrc, el, done, opts) {
+  const o = opts || {};
+  const wrap = document.createElement("div");
+  wrap.className = "ghostThief";
+  const img = document.createElement("img");
+  img.src = ghostSrc; img.alt = "ghost"; img.draggable = false;
+  if (o.wobble) img.className = "walkFunny";
+  wrap.appendChild(img);
+  document.body.appendChild(wrap);
   const r = el.getBoundingClientRect();
-  // the ghost spawns from whichever screen edge is closest to the prize,
-  // and drags it back out the same side it came from
   const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
-  const start = fromLeft ? -300 : window.innerWidth + 150;
-  const exit = fromLeft ? "-130vw" : "130vw";
-  ghost.style.top = (r.top + r.height / 2 - 60) + "px"; // ghost center meets the prize
-  ghost.style.transform = "translateX(" + start + "px)";
-  let grabbed = false;
+  const dir = fromLeft ? 1 : -1;
+  const start = fromLeft ? -260 : window.innerWidth + 130;
+  wrap.style.top = (r.top + r.height / 2 - 60) + "px"; // ghost center meets the prize
+  wrap.style.transform = "translateX(" + start + "px)";
+  let gx = null;
   const grab = () => {
-    if (grabbed) return;
-    grabbed = true;
-    const gw = ghost.getBoundingClientRect().width || 130;
-    ghost.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
-    setTimeout(() => { // got it. leave together, same distance, same speed
-      ghost.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-      ghost.style.transform = el.style.transform = "translateX(" + exit + ")";
-      setTimeout(() => { ghost.remove(); if (done) done(); }, 1300);
-    }, 1250);
+    if (gx !== null) return;
+    gx = (r.left + r.width / 2) - (wrap.getBoundingClientRect().width || 130) / 2;
+    tweenX(wrap, start, gx, 1050);
+    setTimeout(() => { // got it. leave together: same delta, same tween
+      const away = dir * window.innerWidth * 1.35;
+      tweenX(wrap, gx, gx - away, 1200);
+      tweenX(el, 0, -away, 1200, () => { wrap.remove(); if (done) done(); });
+    }, 1350);
   };
-  requestAnimationFrame(() => { ghost.onload = grab; setTimeout(grab, 300); });
-  return ghost;
+  img.onload = grab;
+  setTimeout(grab, 300); // environments that never load images still get the show
+  return wrap;
 }
 
 // rua's heist is a whole production: a monster chases him in, slower, he
@@ -2666,33 +2682,37 @@ function ghostRuaHeist(el, done) {
   const r = el.getBoundingClientRect();
   const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
   const dir = fromLeft ? 1 : -1;
-  const start = fromLeft ? -300 : window.innerWidth + 150;
-  const exit = fromLeft ? "-130vw" : "130vw";
-  const grabX = r.left + r.width / 2 - 60;
+  const start = fromLeft ? -260 : window.innerWidth + 130;
 
-  const rua = document.createElement("img");
-  rua.src = "assets/emotes/ghostrua.png"; rua.alt = "ghost rua"; rua.draggable = false;
-  rua.className = "ghostThief walkFunny";
+  // rua: a wrapper that moves, a picture that wobbles, a walk that walks
+  const rua = document.createElement("div");
+  rua.className = "ghostThief";
+  const ruaImg = document.createElement("img");
+  ruaImg.src = "assets/emotes/ghostrua.png"; ruaImg.alt = "ghost rua"; ruaImg.draggable = false;
+  ruaImg.className = "walkFunny";
+  rua.appendChild(ruaImg);
   rua.style.top = (r.top + r.height / 2 - 60) + "px";
   rua.style.transform = "translateX(" + start + "px)";
   document.body.appendChild(rua);
 
+  // the monster, right behind him and slower
   const mon = document.createElement("div");
-  mon.className = "ghostChaser"; mon.textContent = "👹";
-  mon.style.top = (r.top + r.height / 2 - 34) + "px";
-  mon.style.transform = "translateX(" + (start - dir * 130) + "px)"; // right behind him
+  mon.className = "ghostChaser"; mon.textContent = "\uD83D\uDC80"; // a blight rat, hot on his heels
+  mon.style.top = (r.top + r.height / 2 - 36) + "px";
+  mon.style.transform = "translateX(" + (start - dir * 150) + "px)";
   document.body.appendChild(mon);
   $("blight").dataset.chaser = "1";
 
-  let grabbed = false;
+  let gx = null;
   const grab = () => {
-    if (grabbed) return;
-    grabbed = true;
-    rua.style.transform = "translateX(" + grabX + "px)";
-    mon.style.transform = "translateX(" + (grabX - dir * 95) + "px)"; // almost gets him
-    setTimeout(() => { // exit with the divine, monster follows a beat later
-      rua.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-      rua.style.transform = el.style.transform = "translateX(" + exit + ")";
+    if (gx !== null) return;
+    gx = (r.left + r.width / 2) - (rua.getBoundingClientRect().width || 130) / 2;
+    tweenX(rua, start, gx, 1050);
+    tweenX(mon, start - dir * 150, gx - dir * 95, 1700); // almost gets him
+    setTimeout(() => { // exit with the divine, together
+      const away = dir * window.innerWidth * 1.35;
+      tweenX(rua, gx, gx - away, 1200);
+      tweenX(el, 0, -away, 1200);
       setTimeout(() => { // rua flattens the monster on the way out
         const mr = mon.getBoundingClientRect();
         const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
@@ -2700,7 +2720,7 @@ function ghostRuaHeist(el, done) {
         setTimeout(() => mon.remove(), 300);
         beep(150, 0.12, "square", 0.12); beep(90, 0.2, "sawtooth", 0.1, 0.06);
         const fx = document.createElement("div");
-        fx.className = "popBurst"; fx.textContent = "💥";
+        fx.className = "popBurst"; fx.textContent = "\uD83D\uDCA5";
         fx.style.left = cx + "px"; fx.style.top = cy + "px";
         document.body.appendChild(fx);
         setTimeout(() => fx.remove(), 420);
@@ -2712,15 +2732,13 @@ function ghostRuaHeist(el, done) {
         document.body.appendChild(mb);
         $("blight").dataset.mageblood = "1";
         playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
-        setTimeout(() => { // and off it goes with him
-          mb.style.transition = "transform 1s cubic-bezier(.55,0,.85,.4)";
-          mb.style.transform = "translateX(" + exit + ")";
-          setTimeout(() => { mb.remove(); if (done) done(); }, 1100);
+        setTimeout(() => { // and off it goes with him, same delta, same tween
+          tweenX(mb, 0, dir * window.innerWidth * 1.2, 1100, () => { mb.remove(); if (done) done(); });
         }, 500);
       }, 600);
-    }, 1250);
+    }, 1350);
   };
-  rua.onload = grab;
+  ruaImg.onload = grab;
   setTimeout(grab, 300);
 }
 
