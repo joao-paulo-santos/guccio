@@ -1789,7 +1789,14 @@ function maybeShowBlight(goNext) {
     const btn = $("blightBtn");
     btn.textContent = B.cont || "CONTINUE";
     btn.classList.remove("hidden");
-    btn.onclick = () => { screen.classList.add("hidden"); goNext(); };
+    btn.onclick = () => {
+      // cassia keeps preaching well past the credits. the door closes on her way out
+      Object.keys(poePlayers).forEach((k) => {
+        if (k.indexOf("blight") === 0) { try { poePlayers[k].pause(); } catch (e) {} }
+      });
+      screen.classList.add("hidden");
+      goNext();
+    };
   }
 
   // the wave drips out one monster at a time
@@ -2013,8 +2020,11 @@ function startPhase(phase) {
     return;
   }
   if (phase === "vaal") {
-    const vr = CONFIG.rounds.find((r) => r.vaal && r.upgrade) || CONFIG.rounds[0];
-    roundIdx = CONFIG.rounds.indexOf(vr); // a brick requeues from a sane spot
+    const src = CONFIG.rounds.find((r) => r.vaal && r.upgrade) || CONFIG.rounds[0];
+    // a throwaway clone: a dev slam must not poison the real round for the session
+    const vr = Object.assign({}, src);
+    vr.prize = Object.assign({}, src.prize);
+    roundIdx = CONFIG.rounds.indexOf(src); // a brick requeues from a sane spot
     maybeShowVaal(vr, backToGame);
     return;
   }
