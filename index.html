@@ -905,6 +905,14 @@ const CONFIG = {
     {
       caseName: "THE HOT STREAK CRATE",
       caseNote: "you cannot lose what you already gambled away",
+      vaal: true, // atziri gets this one too: the steins gate itself corrupts
+      redrops: true, // on a successful corruption a clean, unvaalable steins gate drops later, both games are his
+      upgrade: {
+        name: "STEINS;GATE 0",
+        // the corruption even swaps the art and plays the upgraded item's theme
+        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/825630/header.jpg",
+        sound: "https://www.myinstants.com/media/sounds/the-best-hououin-kyouma-pose-steinsgate-mp3cut.mp3",
+      },
       prize: {
         name: "STEINS;GATE",
         sub:  "steam gift",
@@ -922,34 +930,9 @@ const CONFIG = {
         name: "Metal Upa, rare",
         sub:  "colossal. there were five.",
         emoji:"🥤",
-        tier: "red",
+        tier:"red",
       },
       landAt: 51,
-    },
-    {
-      caseName: "THE MIDNIGHT CRATE",
-      caseNote: "the sober gamblers went home hours ago",
-      after: "STEINS;GATE", // world line order: 0 only plays after the first one
-      prize: {
-        name: "STEINS;GATE 0",
-        sub:  "steam gift",
-        emoji:"📻",
-        img: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/825630/header.jpg",
-        tier: "gold",
-        flavor: "a story about ruining everything over and over. relatable.",
-        // win sound: the hououin kyouma pose declaration
-        sound: "https://www.myinstants.com/media/sounds/the-best-hououin-kyouma-pose-steinsgate-mp3cut.mp3",
-        // direct steam gift, no key to paste
-        reveal: "Already on its way to your Steam account",
-        from: ["Ecila", "Patty"],
-      },
-      nearMiss: {
-        name: "IBN 5100",
-        sub:  "it was in akihabara. it was.",
-        emoji:"💻",
-        tier: "red",
-      },
-      landAt: 56,
     },
     {
       caseName: "THE DERBY CRATE",
@@ -1038,7 +1021,11 @@ const CONFIG = {
   // right: the unknown. only accepting the trial moves the show forward.
   // atziri's vaal corruption, plays right after any round flagged vaal: true.
   // one orb, one slam, the outcome is rigged positive: the prize corrupts into
-  // its upgrade.name and shines forever after.
+  // its upgrade.name and shines forever after. upgrade can also carry img and
+  // sound (the corrupted item's own art and theme). a round flagged
+  // redrops: true re-drops its base game later, clean and unvaalable, once
+  // the corruption succeeds: that is how steins gate becomes steins gate 0
+  // while the steins gate itself still drops again.
   vaal: {
     ask: "Vall or no balls",
     slam: "Slaam",
@@ -1361,6 +1348,7 @@ function requeueVaalRound(round) {
 function maybeShowVaal(round, goNext) {
   const V = CONFIG.vaal || {};
   const oldName = round.prize.name;
+  const oldImg = round.prize.img;
   $("vaalBg").src = "assets/atziribackground.jpg";
   $("vaalAsk").textContent = V.ask || "Vall or no balls";
   $("vaalAsk").style.visibility = "";
@@ -1406,11 +1394,25 @@ function maybeShowVaal(round, goNext) {
         if (lucky) {
           round.prize.name = round.upgrade.name;
           round.prize.vaaled = true;
+          if (round.upgrade.img) round.prize.img = round.upgrade.img; // the corruption even swaps the art
           drawPrize();
+          // the upgraded item's own theme, when it carries one
+          if (round.upgrade.sound) playPrizeSound(round.upgrade.sound);
           // the reveal is a triumph, not a funeral
           jingle(); beep(1319, 0.35, "triangle", 0.13, 0.4);
           $("vaalAsk").style.visibility = "hidden";
           Array.from($("inv").querySelectorAll(".nm")).forEach((n) => { if (n.textContent === oldName) n.textContent = round.prize.name; });
+          // when the corruption target was a real prize of its own, the base
+          // game re-drops later, clean and unvaalable: he ends up with both
+          if (round.redrops) {
+            const clean = Object.assign({}, round);
+            clean.prize = Object.assign({}, round.prize);
+            clean.prize.name = oldName;
+            if (oldImg) clean.prize.img = oldImg;
+            clean.prize.vaaled = false;
+            delete clean.vaal; delete clean.upgrade; delete clean.redrops;
+            requeueVaalRound(clean); // same slot rules as a brick: later, clear of the pinned tail
+          }
         } else {
           // bricked. the prize evaporates and returns to the pool for another run
           $("vaalPrize").classList.add("poofed");
