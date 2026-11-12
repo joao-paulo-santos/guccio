@@ -282,11 +282,18 @@
   #trialTake:hover { filter:brightness(1.07); }
   #trialTake.gone { visibility:hidden; } /* abducted, but the layout holds its ground */
   #trialTake:disabled { cursor:default; }
-  .ghostMarco {
+  .ghostThief {
     position:fixed; left:0; top:0; height:120px; z-index:97; pointer-events:none;
     transition:transform 1.1s cubic-bezier(.4,0,.3,1);
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.65));
   }
+  .divineDrop {
+    position:absolute; transform:translate(-50%,-50%); width:46px; height:46px;
+    background-size:contain; background-position:center; background-repeat:no-repeat;
+    filter:drop-shadow(0 0 14px rgba(255,217,74,.9));
+    animation:divineDrop .45s cubic-bezier(.2,2,.4,1); z-index:3;
+  }
+  @keyframes divineDrop { from { transform:translate(-50%,-120%) scale(.4); opacity:0; } }
   #trialOr {
     align-self:center; font-family:Impact,"Arial Black",sans-serif; color:#d8b36a;
     font-size:clamp(40px,7vw,72px); letter-spacing:6px; padding:0 10px;
@@ -1637,7 +1644,7 @@ function maybeShowTrial(goNext) {
   $("trialTake").classList.remove("gone"); // fresh trap every visit
   $("trialTake").disabled = false; // a previous abduction does not carry over
   $("trialTake").style.transform = ""; $("trialTake").style.transition = "";
-  document.querySelectorAll(".ghostMarco").forEach((g) => g.remove()); // no stray ghosts
+  document.querySelectorAll(".ghostThief").forEach((g) => g.remove()); // no stray ghosts
   gameEl.classList.add("hidden");
   finalEl.classList.add("hidden");
   $("trial").classList.remove("hidden");
@@ -1646,37 +1653,10 @@ function maybeShowTrial(goNext) {
     playPoe("trialEager"); // "don't get too eager"
     const btn = $("trialTake");
     btn.disabled = true; // dead to further clicks, still very visible
-    // ghost marco slides in from the left, grabs the button, drags it away
-    const ghost = document.createElement("img");
-    ghost.src = "assets/emotes/ghostmarco.png";
-    ghost.alt = "ghost marco"; ghost.draggable = false;
-    ghost.className = "ghostMarco";
-    document.body.appendChild(ghost);
-    const r = btn.getBoundingClientRect();
-    const centerY = r.top + r.height / 2 - 60; // ghost center meets the button
-    ghost.style.top = centerY + "px";
-    ghost.style.transform = "translateX(-300px)";
-    requestAnimationFrame(() => {
-      let grabbed = false;
-      const grab = () => {
-        if (grabbed) return;
-        grabbed = true;
-        const gw = ghost.getBoundingClientRect().width || 120;
-        ghost.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
-        setTimeout(() => { // got it. now the long way home, button in tow
-          btn.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-          btn.style.transform = "translateX(-130vw)";
-          ghost.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
-          ghost.style.transform = "translateX(-300px)";
-          setTimeout(() => { // layout keeps the hole, the button itself is gone
-            btn.classList.add("gone");
-            btn.style.transform = ""; btn.style.transition = "";
-            ghost.remove();
-          }, 1300);
-        }, 1250);
-      };
-      ghost.onload = grab;
-      setTimeout(grab, 300); // environments that never load images still get the show
+    // ghost marco slides in from the left and carries the button away with him
+    ghostAbduct("assets/emotes/ghostmarco.png", btn, () => {
+      btn.classList.add("gone"); // layout keeps the hole, the button itself is gone
+      btn.style.transform = ""; btn.style.transition = "";
     });
   };
   $("trialAccept").onclick = () => {
@@ -2088,6 +2068,7 @@ function maybeShowBlight(goNext) {
   const spawned = [], el = [];
   let popped = 0, bossesOut = 0, bossesFelled = 0, lastPumpLine = 0;
   screen.dataset.lanes = String(laneN);
+  screen.dataset.divines = "0"; screen.dataset.thieves = "";
   screen.dataset.popped = "0";
   screen.dataset.phase = "wave";
 
@@ -2123,7 +2104,14 @@ function maybeShowBlight(goNext) {
       m.dead = true;
       popped++;
       if (m.gnawing && !spawned.some((o) => !o.dead && o.gnawing)) $("blightPump").classList.remove("alarmed");
-      if (m.boss) { bossesFelled++; popFx(m.x, m.y, true); beep(110, 0.2, "sawtooth", 0.14); beep(70, 0.24, "sawtooth", 0.1, 0.05); playEmote("win"); }
+      if (m.boss) {
+        bossesFelled++;
+        popFx(m.x, m.y, true); beep(110, 0.2, "sawtooth", 0.14); beep(70, 0.24, "sawtooth", 0.1, 0.05); playEmote("win");
+        // like the real fight: bosses drop divines. here, ghosts collect them
+        if (bossesFelled === 1 || bossesFelled === bossCount) {
+          spawnDivine(m, bossesFelled === 1 ? "ghostxiva" : "ghostrua");
+        }
+      }
       else { popFx(m.x, m.y, false); beep(640 + Math.random() * 240, 0.05, "square", 0.09); beep(190, 0.07, "square", 0.06, 0.02); }
       if (!m.boss && Math.random() < 0.17) playPoe("blightPop");
       m.el.remove();
@@ -2141,6 +2129,20 @@ function maybeShowBlight(goNext) {
     m.el.style.left = (m.x / W * 100) + "%"; m.el.style.top = (m.y / H * 100) + "%";
     mobsEl.appendChild(m.el);
     spawned.push(m);
+  }
+  // a divine orb pops where the boss died, glows for a beat, then the
+  // assigned ghost slides in and carries it away. per drop counters for fun
+  function spawnDivine(m, thief) {
+    screen.dataset.divines = String((parseInt(screen.dataset.divines, 10) || 0) + 1);
+    screen.dataset.thieves = (screen.dataset.thieves ? screen.dataset.thieves + "," : "") + thief;
+    const d = document.createElement("div");
+    d.className = "divineDrop";
+    d.title = "divine orb";
+    d.style.backgroundImage = 'url("assets/emotes/divinedrop.png")';
+    d.style.left = (m.x / W * 100) + "%"; d.style.top = (m.y / H * 100) + "%";
+    mobsEl.appendChild(d);
+    playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3"); // the drop ping
+    setTimeout(() => ghostAbduct("assets/emotes/" + thief + ".png", d, () => d.remove()), 900);
   }
   function spawnBosses() {
     screen.dataset.phase = "bosses";
@@ -2596,6 +2598,33 @@ function setEmoteSrc(img, file, onOk, onGone) {
     img.onerror = () => { i++; trySrc(); };
     img.src = path + file + exts[i];
   })();
+}
+
+// a ghost slides in from the left, grabs an element and carries it away.
+// both travel to the same target with the same curve, so nothing ever looks
+// chased: they leave as one. environments that never load images still work.
+function ghostAbduct(ghostSrc, el, done) {
+  const ghost = document.createElement("img");
+  ghost.src = ghostSrc; ghost.alt = "ghost"; ghost.draggable = false;
+  ghost.className = "ghostThief";
+  document.body.appendChild(ghost);
+  const r = el.getBoundingClientRect();
+  ghost.style.top = (r.top + r.height / 2 - 60) + "px"; // ghost center meets the prize
+  ghost.style.transform = "translateX(-300px)";
+  let grabbed = false;
+  const grab = () => {
+    if (grabbed) return;
+    grabbed = true;
+    const gw = ghost.getBoundingClientRect().width || 130;
+    ghost.style.transform = "translateX(" + (r.left + r.width / 2 - gw / 2) + "px)";
+    setTimeout(() => { // got it. leave together, same distance, same speed
+      ghost.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
+      ghost.style.transform = el.style.transform = "translateX(-130vw)";
+      setTimeout(() => { ghost.remove(); if (done) done(); }, 1300);
+    }, 1250);
+  };
+  requestAnimationFrame(() => { ghost.onload = grab; setTimeout(grab, 300); });
+  return ghost;
 }
 
 // ---------- emote player ----------
