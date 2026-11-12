@@ -287,6 +287,29 @@
     transition:transform 1.1s cubic-bezier(.4,0,.3,1);
     filter:drop-shadow(0 8px 16px rgba(0,0,0,.65));
   }
+  .walkFunny { animation:walkFunny .32s ease infinite alternate; transform-origin:50% 100%; }
+  @keyframes walkFunny {
+    from { transform:translateY(0) rotate(-7deg); }
+    to   { transform:translateY(-9px) rotate(6deg); }
+  }
+  .ghostChaser {
+    position:fixed; left:0; top:0; font-size:64px; z-index:96; pointer-events:none;
+    transition:transform 1.7s cubic-bezier(.4,0,.3,1);
+    filter:drop-shadow(0 6px 12px rgba(0,0,0,.6));
+  }
+  .ghostChaser.flat { animation:monFlat .25s ease forwards; }
+  @keyframes monFlat { to { transform:scaleY(.15) translateY(26px); opacity:0; } }
+  .popBurst {
+    position:fixed; font-size:42px; z-index:97; pointer-events:none;
+    transform:translate(-50%,-50%); animation:popfx2 .4s ease forwards;
+  }
+  @keyframes popfx2 { to { transform:translate(-50%,-50%) scale(1.8); opacity:0; } }
+  .mbDrop {
+    position:fixed; width:110px; height:32px;
+    background-size:contain; background-position:center; background-repeat:no-repeat;
+    filter:drop-shadow(0 0 14px rgba(255,217,74,.95));
+    animation:divineDrop .45s cubic-bezier(.2,2,.4,1); z-index:97;
+  }
   .divineDrop {
     position:absolute; transform:translate(-50%,-50%); width:110px; height:32px;
     background-size:contain; background-position:center; background-repeat:no-repeat;
@@ -2069,6 +2092,7 @@ function maybeShowBlight(goNext) {
   let popped = 0, bossesOut = 0, bossesFelled = 0, lastPumpLine = 0;
   screen.dataset.lanes = String(laneN);
   screen.dataset.divines = "0"; screen.dataset.thieves = "";
+  screen.dataset.chaser = "0"; screen.dataset.mageblood = "0";
   screen.dataset.popped = "0";
   screen.dataset.phase = "wave";
 
@@ -2142,7 +2166,10 @@ function maybeShowBlight(goNext) {
     d.style.left = (m.x / W * 100) + "%"; d.style.top = (m.y / H * 100) + "%";
     mobsEl.appendChild(d);
     playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3"); // the drop ping
-    setTimeout(() => ghostAbduct("assets/emotes/" + thief + ".png", d, () => d.remove()), 900);
+    setTimeout(() => {
+      if (thief === "ghostrua") ghostRuaHeist(d, () => d.remove());
+      else ghostAbduct("assets/emotes/" + thief + ".png", d, () => d.remove());
+    }, 900);
   }
   function spawnBosses() {
     screen.dataset.phase = "bosses";
@@ -2630,6 +2657,71 @@ function ghostAbduct(ghostSrc, el, done) {
   };
   requestAnimationFrame(() => { ghost.onload = grab; setTimeout(grab, 300); });
   return ghost;
+}
+
+// rua's heist is a whole production: a monster chases him in, slower, he
+// grabs the divine, walks out, flattens the monster on the way, and the
+// monster drops a mageblood with the drop ping. which he also takes.
+function ghostRuaHeist(el, done) {
+  const r = el.getBoundingClientRect();
+  const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
+  const dir = fromLeft ? 1 : -1;
+  const start = fromLeft ? -300 : window.innerWidth + 150;
+  const exit = fromLeft ? "-130vw" : "130vw";
+  const grabX = r.left + r.width / 2 - 60;
+
+  const rua = document.createElement("img");
+  rua.src = "assets/emotes/ghostrua.png"; rua.alt = "ghost rua"; rua.draggable = false;
+  rua.className = "ghostThief walkFunny";
+  rua.style.top = (r.top + r.height / 2 - 60) + "px";
+  rua.style.transform = "translateX(" + start + "px)";
+  document.body.appendChild(rua);
+
+  const mon = document.createElement("div");
+  mon.className = "ghostChaser"; mon.textContent = "👹";
+  mon.style.top = (r.top + r.height / 2 - 34) + "px";
+  mon.style.transform = "translateX(" + (start - dir * 130) + "px)"; // right behind him
+  document.body.appendChild(mon);
+  $("blight").dataset.chaser = "1";
+
+  let grabbed = false;
+  const grab = () => {
+    if (grabbed) return;
+    grabbed = true;
+    rua.style.transform = "translateX(" + grabX + "px)";
+    mon.style.transform = "translateX(" + (grabX - dir * 95) + "px)"; // almost gets him
+    setTimeout(() => { // exit with the divine, monster follows a beat later
+      rua.style.transition = el.style.transition = "transform 1.2s cubic-bezier(.55,0,.85,.4)";
+      rua.style.transform = el.style.transform = "translateX(" + exit + ")";
+      setTimeout(() => { // rua flattens the monster on the way out
+        const mr = mon.getBoundingClientRect();
+        const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
+        mon.classList.add("flat");
+        setTimeout(() => mon.remove(), 300);
+        beep(150, 0.12, "square", 0.12); beep(90, 0.2, "sawtooth", 0.1, 0.06);
+        const fx = document.createElement("div");
+        fx.className = "popBurst"; fx.textContent = "💥";
+        fx.style.left = cx + "px"; fx.style.top = cy + "px";
+        document.body.appendChild(fx);
+        setTimeout(() => fx.remove(), 420);
+        // the monster drops a mageblood. rua takes it, obviously
+        const mb = document.createElement("div");
+        mb.className = "mbDrop"; mb.title = "mageblood";
+        mb.style.backgroundImage = 'url("assets/mageblood.png")';
+        mb.style.left = (cx - 55) + "px"; mb.style.top = (cy - 16) + "px";
+        document.body.appendChild(mb);
+        $("blight").dataset.mageblood = "1";
+        playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
+        setTimeout(() => { // and off it goes with him
+          mb.style.transition = "transform 1s cubic-bezier(.55,0,.85,.4)";
+          mb.style.transform = "translateX(" + exit + ")";
+          setTimeout(() => { mb.remove(); if (done) done(); }, 1100);
+        }, 500);
+      }, 600);
+    }, 1250);
+  };
+  rua.onload = grab;
+  setTimeout(grab, 300);
 }
 
 // ---------- emote player ----------
