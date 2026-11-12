@@ -2262,14 +2262,16 @@ function maybeShowHarvest(round, goNext) {
   }
   function winAll() {
     jingle(); // take it all, take it all
-    // everything won: the harvest-only games join the final loot
+    // everything won: the harvest-only games join the final loot and the rail
     games.forEach((g) => {
       if (!wonKeys.some((r) => r.prize.name === g.name)) {
-        wonKeys.push({
+        const synth = {
           caseName: "THE SACRED GROVE",
           prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img,
                    tier: "gold", key: g.key, from: round.prize.from },
-        });
+        };
+        wonKeys.push(synth);
+        addToInv(synth); // the inventory rail shows the whole haul
       }
     });
     endGame(true);
