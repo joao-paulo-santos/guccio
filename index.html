@@ -1107,7 +1107,7 @@ const CONFIG = {
         name: "★ Karambit | Doppler",
         sub:  "factory new. it was never real.",
         emoji:"🔪",
-        img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rYW1hYml0X2FtX2RvcGxlcl9waGFzZTFfbGlnaHQuN2M4ODcyMDEwYjM0YzNhMGU5Njk2NmUzNThkZDJhNmM4YThmYmFiNC5wbmc--/auto/auto/85/notrim/cd0536c877b161e894e77d613840c506.webp",
+        img: "assets/karambit.png", // self hosted, the old cdn link died
         tier: "red",
       },
       landAt: 55,
@@ -1119,6 +1119,7 @@ const CONFIG = {
       upgrade: {
         name: "Captain Tsubasa: Rise of New Champions Ultimate Edition",
         sound: "assets/tsubasa_anthem.mp3", // the corruption replays the anthem too
+        soundCut: true, // and it ends when the vaal screen closes
       },
       prize: {
         name: "Captain Tsubasa: Rise of New Champions",
@@ -1155,6 +1156,7 @@ const CONFIG = {
         flavor: "900 hours guaranteed. rage quit by february. you will come back by march.",
         // win sound: the eternal soundtrack of every stadium
         sound: "https://www.myinstants.com/media/sounds/vuvuzela.mp3",
+        soundCut: true, // the stadium goes quiet when he moves on
         key: "PASTE-KEY-5-HERE",
         // the whole squad chipped in for this one
         from: ["X1va", "Henrique", "Pejotaas", "Tulio", "Marco", "Bruno", "Miguel"],
@@ -1767,6 +1769,8 @@ function maybeShowVaal(round, goNext) {
     } else {
       $("vaalAsk").classList.remove("bad");
       beep(680, 0.09, "square", 0.1);
+      // long corruption themes flagged soundCut end with the screen
+      if (round.upgrade && round.upgrade.soundCut && prizeAudio) { try { prizeAudio.pause(); } catch (e) {} }
       $("vaal").classList.add("hidden");
       goNext();
     }
