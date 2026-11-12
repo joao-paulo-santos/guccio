@@ -1899,6 +1899,7 @@ function maybeShowMaven(goNext) {
   function fail() {
     arena.dataset.phase = "fail";
     playPoe("mavenFail"); // "not good!"
+    playEmote(wave === 0 ? "setback" : "lose"); // wave one is a hiccup, deeper hurts more
     sub.textContent = M.failSub || "wrong. she noticed.";
     arena.classList.remove("shake"); void arena.offsetWidth; arena.classList.add("shake");
     drawPips(0);
@@ -1918,12 +1919,14 @@ function maybeShowMaven(goNext) {
       if (wave + 1 < rounds.length) {
         arena.dataset.phase = "cleared";
         playPoe("mavenClear"); // "another. joy."
+        playEmote("win");
         sub.textContent = M.clearSub || "she approves.";
         wave++;
         setTimeout(startWave, 1500 / spd);
       } else {
         arena.dataset.phase = "won";
         playPoe("mavenWin"); // "a delightful show."
+        playEmote("win");
         sub.textContent = M.winSub || "a delightful show.";
         $("mavenBtn").textContent = M.cont || "CONTINUE";
         $("mavenBtn").classList.remove("hidden");
