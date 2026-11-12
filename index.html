@@ -837,9 +837,10 @@ const CONFIG = {
         sound: "https://www.myinstants.com/media/sounds/dame-da-ne.mp3",
         // PUT YOUR KEY HERE. two options:
         //   a) lazy: paste the key directly in these quotes (visible if he reads the repo)
-        //   b) smart: open the live page, get past the password gate, F12 console,
-        //      run await encodeKey("AAAAA-BBBBB-CCCCC") and paste the enc:... string here.
-        //      it only decrypts with the gate password. crawlers get static.
+        //   b) smart: open the live page as ?password=x&person=guccio, get past
+        //      the gate, F12 console, run await encodeKey("AAAAA-BBBBB-CCCCC")
+        //      and paste the enc:... string here. it only decrypts for that
+        //      exact url. friends testing without person=guccio get noise.
         key: "PASTE-KEY-1-HERE",
         // who paid for this gift, shown on the win screen. friends adding gifts: your name here
         from: ["Ecila", "Patty"],
@@ -1190,15 +1191,19 @@ const CONFIG = {
   ],
   signature: "happy birthday guccio. from your favorite enablers.",
 
-  // password gate. the page refuses to start without it, and the same password
-  // encrypts the steam keys, so anyone reading the repo finds nothing usable.
+  // password gate. the page refuses to start without it. the gate password
+  // only checks against the verifier below. the steam keys are harder to get:
+  // they scramble with the password AND ?person=x from the url, so friends
+  // testing the site (password, no person) see everything except working keys.
+  // the birthday link carries both: ?password=x&person=guccio
   // setup: open the page (the gate stays off while these placeholders are here),
   // press F12 and run:  await passTool("your password")
-  // then paste the printed salt and verifier below, push, done.
+  // then paste the printed salt, verifier and vaultSalt below, push, done.
   // pick something he can guess but a stranger cannot, the hint below helps him.
   passwordGate: {
     salt: "7e712ca852d50c5ec580231cbe20337d",
     verifier: "ae955fdada97364de817df9a631c3cca916aa958020c86b725abb27da3826b57",
+    vaultSalt: "dc5a375dec3c8053dba037863dd451e0",
     hint: "", // shown under the box, set a clue only he would get
   },
 
@@ -1343,8 +1348,9 @@ function maybeShowTrial(goNext) {
 function requeueVaalRound(round) {
   const rounds = CONFIG.rounds;
   let pos = roundIdx + 2;
-  const firstFinale = rounds.findIndex((r) => r.finale);
-  if (firstFinale >= 0) pos = Math.min(pos, firstFinale);
+  // stay clear of the pinned tail: the pre-finale and finale slots keep their places
+  const firstPin = rounds.findIndex((r) => r.finale || r.preFinale);
+  if (firstPin >= 0) pos = Math.min(pos, firstPin);
   pos = Math.max(roundIdx + 1, Math.min(pos, rounds.length));
   rounds.splice(pos, 0, round);
 }
@@ -1896,8 +1902,13 @@ function playPrizeSound(src) {
    ===================================================================== */
 
 // ---------- password gate + key vault ----------
-// the gate password also encrypts the steam keys, so the public repo is useless to crawlers.
-let SESSION_KEY_HEX = null; // filled once the right password is entered
+// two layers of secret:
+//   the gate password opens the page (friends testing know it)
+//   ?person=x mixes into the key vault, so only the birthday url
+//   (?password=x&person=guccio) unscrambles the actual steam keys
+let SESSION_KEY_HEX = null;   // gate key, from the password alone
+let SESSION_VAULT_HEX = null; // vault key, from the password AND the person
+let URL_PERSON = "";          // ?person=x, the second factor for the keys
 
 function buf2hex(buf) { return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join(""); }
 async function pbkdf2Hex(pass, salt, iters) {
@@ -1916,31 +1927,39 @@ function xorKey(text, hex) {
   return out;
 }
 
-// after unlocking the page with the password, scramble a real key in the console:
-//   await encodeKey("AAAAA-BBBBB-CCCCC")
+// after unlocking with the birthday url (?password=x&person=guccio), scramble
+// a real key in the console:   await encodeKey("AAAAA-BBBBB-CCCCC")
 // then paste the printed enc:... string into the round's key field.
+// without a person in the url it refuses, so keys cannot get sealed for nobody.
 window.encodeKey = async (k) => {
-  if (!SESSION_KEY_HEX) return "locked. enter the gate password first, then run this again";
-  return "enc:" + btoa(xorKey(k, SESSION_KEY_HEX));
+  if (!SESSION_VAULT_HEX) return "locked. enter the gate password first, then run this again";
+  if (!URL_PERSON) return "add ?person=guccio to the url, reload, unlock, then run this again";
+  const out = "enc:" + btoa(xorKey(k, SESSION_VAULT_HEX));
+  console.log("encrypted for person: " + URL_PERSON);
+  return out;
 };
 function unwrapKey(v) {
   if (v && v.slice(0, 4) === "enc:") {
-    if (!SESSION_KEY_HEX) return "the vault is locked";
+    if (!SESSION_VAULT_HEX) return "the vault is locked";
     let out = "";
-    try { out = xorKey(atob(v.slice(4)), SESSION_KEY_HEX); } catch (e) { out = ""; }
-    if (!/^[\x20-\x7e]{1,64}$/.test(out)) return "WRONG PASSWORD? the vault stays shut";
+    try { out = xorKey(atob(v.slice(4)), SESSION_VAULT_HEX); } catch (e) { out = ""; }
+    // a real steam key has a shape. garbage means the person in the url is wrong.
+    if (!/^([A-Za-z0-9]{5}-)+[A-Za-z0-9]{5}$/.test(out))
+      return "this key will not unscramble. it was sealed for someone else.";
     return out;
   }
   return v;
 }
 
 // run this in the console once to set the gate password: await passTool("your password")
-// it prints a salt and a verifier (never the password itself). paste both into CONFIG.passwordGate.
+// it prints a salt, a verifier and a vaultSalt (never the password itself).
+// paste all three into CONFIG.passwordGate.
 window.passTool = async (pass) => {
   const salt = buf2hex(crypto.getRandomValues(new Uint8Array(16)));
+  const vaultSalt = buf2hex(crypto.getRandomValues(new Uint8Array(16)));
   const keyHex = await pbkdf2Hex(pass, salt, 100000);
   const verifier = await sha256Hex(keyHex + ":verify");
-  const out = { salt, verifier };
+  const out = { salt, verifier, vaultSalt };
   console.log("paste into CONFIG.passwordGate:\n" + JSON.stringify(out, null, 2));
   return out;
 };
@@ -2485,7 +2504,10 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
     const keyHex = await pbkdf2Hex(pass, G.salt, 100000);
     const verifier = await sha256Hex(keyHex + ":verify");
     if (verifier === G.verifier) {
-      SESSION_KEY_HEX = keyHex; // this also unlocks the steam key vault
+      SESSION_KEY_HEX = keyHex; // opens the page
+      // the vault mixes in ?person= too: friends testing get in, only the
+      // birthday url gets keys that unscramble
+      SESSION_VAULT_HEX = await pbkdf2Hex(pass + "|" + URL_PERSON, G.vaultSalt || G.salt, 100000);
       gateEl.classList.add("fading");
       setTimeout(() => { gateEl.classList.add("hidden"); startIntro(); }, 650);
     } else {
@@ -2497,8 +2519,11 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
   $("gateBtn").addEventListener("click", () => tryPass());
   $("gatePass").addEventListener("keydown", (e) => { if (e.key === "Enter") tryPass(); });
 
-  // lazy reload: ?password=whatever unlocks on its own, no retyping every reload
-  const urlPass = new URLSearchParams(window.location.search).get("password");
+  // lazy reload: ?password=whatever unlocks on its own, no retyping every reload.
+  // ?person=x rides along silently and only matters for the key vault.
+  const params = new URLSearchParams(window.location.search);
+  URL_PERSON = params.get("person") || "";
+  const urlPass = params.get("password");
   if (urlPass) { $("gatePass").value = urlPass; tryPass(urlPass); }
 })();
 </script>
