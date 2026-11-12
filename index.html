@@ -2017,6 +2017,7 @@ function startPhase(phase) {
     return;
   }
   if (phase === "tujen") { maybeShowInterlude(0, backToGame); return; }
+  if (phase === "trial") { maybeShowTrial(backToGame); return; }
   if (phase === "blight") { maybeShowBlight(backToGame); return; }
   if (phase === "maven") { maybeShowMaven(backToGame); return; }
   startIntro(); // unknown phase, the normal show
@@ -2518,7 +2519,7 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
   // everything rides in the url:
   //   ?password=x  unlocks on its own, no retyping every reload
   //   ?person=x    second factor for the key vault, only guccio gets real keys
-  //   ?phase=x     dev shortcut: reward, vaal, tujen, blight or maven
+  //   ?phase=x     dev shortcut: reward, vaal, tujen, trial, blight or maven
   const params = new URLSearchParams(window.location.search);
   URL_PERSON = params.get("person") || "";
   const urlPass = params.get("password");
