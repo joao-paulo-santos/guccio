@@ -491,7 +491,7 @@
 
   /* ============ REWARD HUB ============ */
   #adminRewards { background:#0b0d12; z-index:75; overflow-y:auto; }
-  #adminRewardsBox { text-align:center; width:min(94vw,900px); margin:0 auto; padding:30px 0 40px; }
+  #adminRewardsBox { text-align:center; width:min(94vw,900px); margin:auto; padding:30px 0 40px; } /* margin:auto: tall grids scroll instead of clipping the top */
   #adminRewardsTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
   #adminRewardsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
   #rwTabs { display:flex; gap:8px; justify-content:center; margin-top:16px; }
@@ -504,6 +504,12 @@
   #rwTabs button:hover { filter:brightness(1.2); }
   #adminRewardsGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
   #adminFillersGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+  .rwSticker {
+    position:absolute; top:6px; right:-8px; z-index:2;
+    background:#eb4b4b; color:#fff; font-size:8px; font-weight:800; letter-spacing:1px;
+    padding:3px 7px; border-radius:4px 0 0 4px; transform:rotate(6deg);
+    box-shadow:0 2px 8px rgba(0,0,0,.5); pointer-events:none;
+  }
   #adminFillersGrid .card { cursor:default; }
   #adminRewardsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
   #adminRewardsGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(255,207,63,.4); }
@@ -516,7 +522,7 @@
 
   /* ============ EMOTE GALLERY ============ */
   #adminEmotes { background:#0b0d12; z-index:75; overflow-y:auto; }
-  #adminEmotesBox { text-align:center; width:min(94vw,860px); margin:0 auto; padding:30px 0 40px; }
+  #adminEmotesBox { text-align:center; width:min(94vw,860px); margin:auto; padding:30px 0 40px; }
   #adminEmotesTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
   #adminEmotesSub { color:#8b93a3; font-size:13px; margin-top:8px; }
   #adminEmotesGrid { margin-top:20px; text-align:left; }
@@ -695,9 +701,9 @@
   #winArt .art.pic { width:112px; height:82px; background-size:contain; background-position:center; background-repeat:no-repeat; }
   #winCard .nm { font-size:13px; font-weight:800; padding:0 8px; }
   #winCard .sb { font-size:10px; color:#79808f; padding:0 8px; }
-  #nearBox { margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:6px; }
-  #nearBox .nearLabel { color:#5b6275; font-size:10px; letter-spacing:3px; }
-  #nearBox .card { transform:scale(.72); transform-origin:top center; margin:-14px 0; cursor:default; }
+  #nearBox { margin-top:12px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  #nearBox .nearLabel { color:#5b6275; font-size:10px; letter-spacing:3px; order:2; }
+  #nearBox .card { transform:scale(.7); transform-origin:top center; margin:0 0 -34px; cursor:default; order:1; }
   #winFlavor { color:#8b93a3; font-size:13.5px; line-height:1.5; min-height:20px; }
   #giftFrom { display:none; margin-top:12px; }
   #giftFrom.show { display:block; }
@@ -1019,7 +1025,7 @@
     <div id="winFlavor"></div>
     <div id="giftFrom"></div>
     <div id="nearBox" class="hidden">
-      <div class="nearLabel">THE ALMOST</div>
+      <div class="nearLabel">NEAR MISS</div>
       <div id="nearCard"></div>
     </div>
     <button id="unwrapBtn">UNWRAP KEY</button>
@@ -2871,9 +2877,17 @@ function showAdminRewards() {
   grid.innerHTML = "";
   fills.innerHTML = "";
 
-  // every round prize; its near miss shows inside the preview when clicked
+  // every round prize; its near miss shows inside the preview when clicked.
+  // prizes whose near miss still has no art wear a sticker, so the gift
+  // guy can see at a glance what still needs an idea
   CONFIG.rounds.forEach((r) => {
     const c = makeCard(Object.assign({ tier: "gold", sub: r.caseName }, r.prize));
+    if (r.nearMiss && !r.nearMiss.img) {
+      const st = document.createElement("div");
+      st.className = "rwSticker";
+      st.textContent = "NEAR MISS NEEDS ART";
+      c.appendChild(st);
+    }
     c.onclick = () => {
       playPrizeSound(r.prize.sound); // the win theme, if it has one
       openWinModal(r, true, r.nearMiss); // view mode: BACK instead of CONTINUE
@@ -2898,8 +2912,14 @@ function showAdminRewards() {
     c.onclick = () => openWinModal(r, true);
     grid.appendChild(c);
   });
-  // the second tab: every filler joke item, the ones that never drop for real
-  CONFIG.jokeItems.forEach((j) => fills.appendChild(makeCard(j)));
+  // the second tab: the jokes that can never drop for real. anything
+  // winnable (round prizes, corruptions, grove games) is not a filler
+  const winnable = new Set([
+    ...CONFIG.rounds.map((r) => r.prize.name),
+    ...CONFIG.rounds.filter((r) => r.upgrade).map((r) => r.upgrade.name),
+    ...((CONFIG.harvest && CONFIG.harvest.games) || []).map((g) => g.name),
+  ]);
+  CONFIG.jokeItems.filter((j) => !winnable.has(j.name)).forEach((j) => fills.appendChild(makeCard(j)));
   rwSwitchTab(true);
 }
 function rwSwitchTab(prizes) {
