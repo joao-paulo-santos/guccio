@@ -437,6 +437,29 @@
   #blightBtn:hover { filter:brightness(1.08); }
   #blightFine { margin-top:14px; color:#4a5162; font-size:11px; }
 
+  /* ============ DEV HUB ============ */
+  #admin { background:#0b0d12; z-index:70; }
+  #adminBox { text-align:center; width:min(92vw,560px); }
+  #adminTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
+  #adminSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #adminBtns { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:22px; }
+  #adminBtns button {
+    padding:12px 18px; font-size:12px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808;
+    box-shadow:0 3px 0 #2c0505, inset 0 1px 0 rgba(255,220,180,.18);
+  }
+  #adminBtns button:hover { filter:brightness(1.2); }
+  #adminFine { margin-top:20px; color:#4a5162; font-size:11px; }
+  #adminBar { position:fixed; top:10px; right:12px; z-index:95; }
+  #adminHub {
+    padding:8px 16px; font-size:11px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808;
+    box-shadow:0 3px 0 #2c0505;
+  }
+  #adminHub:hover { filter:brightness(1.2); }
+
   /* ============ HARVEST GROVE ============ */
   #harvest { background:#07130a; z-index:60; overflow:hidden; }
   #harvestBg {
@@ -758,6 +781,17 @@
     <div id="blightFine">cassia has never lost a pump. she is not about to start with you.</div>
   </div>
 </div>
+
+<!-- ==================== DEV HUB (?phase=admin) ==================== -->
+<div id="admin" class="screen hidden">
+  <div id="adminBox">
+    <div id="adminTitle">DEV HUB</div>
+    <div id="adminSub">pick a mechanic. when it is done it comes back here.</div>
+    <div id="adminBtns"></div>
+    <div id="adminFine">phase=admin in the url opens this. the show runs normally without it.</div>
+  </div>
+</div>
+<div id="adminBar" class="hidden"><button id="adminHub">HUB</button></div>
 
 <!-- ==================== HARVEST GROVE ==================== -->
 <div id="harvest" class="screen hidden">
@@ -2317,11 +2351,8 @@ $("tujenImg").src = "assets/tujen.webp";
 // so it can be tested without replaying the whole show. reward skips to the
 // final loot screen with everything marked won, which also doubles as the
 // "let me back in to copy my keys" link once the party is over.
-function startPhase(phase) {
-  if (!phase) { startIntro(); return; }
-  introEl.classList.add("hidden");
-  const backToGame = () => loadRound(0);
-  if (phase === "reward") {
+function runPhase(name, goNext) {
+  if (name === "reward") {
     // preview the loot as if every corruption landed: upgrades applied, and
     // redrop rounds contribute their base game on top. all on clones, so the
     // dev peek never poisons the real rounds for the session
@@ -2347,28 +2378,65 @@ function startPhase(phase) {
     showFinal();
     return;
   }
-  if (phase === "vaal") {
+  if (name === "vaal") {
     const src = CONFIG.rounds.find((r) => r.vaal && r.upgrade) || CONFIG.rounds[0];
     // a throwaway clone: a dev slam must not poison the real round for the session
     const vr = Object.assign({}, src);
     vr.prize = Object.assign({}, src.prize);
     roundIdx = CONFIG.rounds.indexOf(src); // a brick requeues from a sane spot
-    maybeShowVaal(vr, backToGame);
+    maybeShowVaal(vr, goNext);
     return;
   }
-  if (phase === "tujen") { maybeShowInterlude(0, backToGame); return; }
-  if (phase === "harvest") {
+  if (name === "harvest") {
     const hsrc = CONFIG.rounds.find((r) => r.harvest) || CONFIG.rounds[0];
     const hclone = Object.assign({}, hsrc); // throwaway, dev crafts poison nothing
     hclone.prize = Object.assign({}, hsrc.prize);
     roundIdx = CONFIG.rounds.indexOf(hsrc);
-    maybeShowHarvest(hclone, backToGame);
+    maybeShowHarvest(hclone, goNext);
     return;
   }
-  if (phase === "trial") { maybeShowTrial(backToGame); return; }
-  if (phase === "blight") { maybeShowBlight(backToGame); return; }
-  if (phase === "maven") { maybeShowMaven(backToGame); return; }
-  startIntro(); // unknown phase, the normal show
+  if (name === "tujen") { maybeShowInterlude(0, goNext); return; }
+  if (name === "trial") { maybeShowTrial(goNext); return; }
+  if (name === "call") { maybeShowCall(goNext); return; }
+  if (name === "blight") { maybeShowBlight(goNext); return; }
+  if (name === "maven") { maybeShowMaven(goNext); return; }
+  return false; // unknown mechanic
+}
+
+// the dev hub: ?phase=admin lists every mechanic, each one lands back here
+// when it finishes. the HUB button in the corner works mid-mechanic too.
+const ADMIN_ITEMS = [
+  ["reward", "LOOT PREVIEW"],
+  ["vaal", "ATZIRI'S VAAL"],
+  ["harvest", "HARVEST GROVE"],
+  ["tujen", "TUJEN'S DEAL"],
+  ["trial", "TRIALMASTER"],
+  ["call", "DIABETIC CALL"],
+  ["blight", "BLIGHT DEFENSE"],
+  ["maven", "MAVEN MEMORY"],
+];
+function showAdmin() {
+  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call"].forEach((id) => {
+    const el = document.getElementById(id); if (el) el.classList.add("hidden");
+  });
+  const grid = $("adminBtns");
+  if (!grid.children.length) {
+    ADMIN_ITEMS.forEach(([key, label]) => {
+      const b = document.createElement("button");
+      b.textContent = label; b.dataset.phase = key;
+      b.onclick = () => { $("admin").classList.add("hidden"); runPhase(key, showAdmin); };
+      grid.appendChild(b);
+    });
+  }
+  $("adminBar").classList.remove("hidden");
+  $("adminHub").onclick = showAdmin;
+  $("admin").classList.remove("hidden");
+}
+function startPhase(phase) {
+  if (!phase) { startIntro(); return; }
+  if (phase === "admin") { showAdmin(); return; }
+  introEl.classList.add("hidden");
+  if (runPhase(phase, () => loadRound(0)) === false) startIntro(); // unknown phase, the normal show
 }
 
 function startIntro() {
