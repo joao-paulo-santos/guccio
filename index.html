@@ -451,6 +451,37 @@
   }
   #adminBtns button:hover { filter:brightness(1.2); }
   #adminFine { margin-top:20px; color:#4a5162; font-size:11px; }
+
+  /* ============ EMOTE GALLERY ============ */
+  #adminEmotes { background:#0b0d12; z-index:75; overflow-y:auto; }
+  #adminEmotesBox { text-align:center; width:min(94vw,860px); margin:0 auto; padding:30px 0 40px; }
+  #adminEmotesTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
+  #adminEmotesSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #adminEmotesGrid { margin-top:20px; text-align:left; }
+  .emCat { margin-top:18px; }
+  .emCatHead { display:flex; align-items:center; gap:12px; color:#5b6275; font-size:11px; letter-spacing:3px; }
+  .emCatHead::after { content:""; flex:1; height:1px; background:#1d222c; }
+  .emCatRandom {
+    padding:4px 10px; font-size:9px; font-weight:800; letter-spacing:1px; border-radius:4px; cursor:pointer;
+    color:#f0d9c0; background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808;
+  }
+  .emCatRandom:hover { filter:brightness(1.2); }
+  .emCatRow { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+  .emItem {
+    width:118px; background:#12151c; border:1px solid #232936; border-radius:10px;
+    padding:8px 6px 7px; text-align:center; cursor:pointer; user-select:none;
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .emItem:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(235,75,75,.35); }
+  .emItem img { max-width:88px; max-height:88px; display:block; margin:0 auto; }
+  .emItem .emName { font-size:9px; font-weight:700; color:#e6e9f0; line-height:1.25; margin-top:5px; word-break:break-all; }
+  .emItem .emDef { font-size:9px; color:#ffd94a; margin-top:2px; min-height:1.1em; }
+  #adminEmotesBack {
+    margin-top:24px; padding:10px 26px; font-size:12px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808; box-shadow:0 3px 0 #2c0505;
+  }
+  #adminEmotesBack:hover { filter:brightness(1.2); }
   #adminBar { position:fixed; top:10px; right:12px; z-index:95; }
   #adminHub {
     padding:8px 16px; font-size:11px; font-weight:800; letter-spacing:2px;
@@ -806,6 +837,16 @@
   </div>
 </div>
 <div id="adminBar" class="hidden"><button id="adminHub">HUB</button></div>
+
+<!-- ==================== EMOTE GALLERY (?phase=admin) ==================== -->
+<div id="adminEmotes" class="screen hidden">
+  <div id="adminEmotesBox">
+    <div id="adminEmotesTitle">EMOTES</div>
+    <div id="adminEmotesSub">click one to preview it exactly as it will appear in the show.</div>
+    <div id="adminEmotesGrid"></div>
+    <button id="adminEmotesBack">BACK TO HUB</button>
+  </div>
+</div>
 <div id="emotes"></div>
 
 <!-- ==================== HARVEST GROVE ==================== -->
@@ -2454,6 +2495,20 @@ function runPhase(name, goNext) {
   return false; // unknown mechanic
 }
 
+// bare emote names get their extension probed once, here. onOk fires when
+// the picture is really there, onGone when nothing matched.
+function setEmoteSrc(img, file, onOk, onGone) {
+  const path = (CONFIG.emotes && CONFIG.emotes.path) || "assets/emotes/";
+  const exts = ["", ".webp", ".png", ".gif", ".jpg", ".jpeg"];
+  let i = 0;
+  (function trySrc() {
+    if (i >= exts.length) { if (onGone) onGone(); return; }
+    img.onload = onOk || null;
+    img.onerror = () => { i++; trySrc(); };
+    img.src = path + file + exts[i];
+  })();
+}
+
 // ---------- emote player ----------
 // playEmote("ezguccio1", "GG EZ") pops a picture bottom right with the text
 // under it, then leaves on its own. bare names probe the usual extensions.
@@ -2478,14 +2533,8 @@ function playEmote(emote, text) {
   $("emotes").appendChild(d);
   const kill = () => { d.classList.add("out"); setTimeout(() => d.remove(), 350); };
   const timer = setTimeout(kill, (E.duration || 2) * 1000);
-  let i = 0;
-  const exts = ["", ".webp", ".png", ".gif", ".jpg", ".jpeg"];
-  (function trySrc() {
-    if (i >= exts.length) { clearTimeout(timer); d.remove(); return; } // no such emote, quiet exit
-    img.onload = () => { d.classList.add("in"); beep(880, 0.06, "square", 0.07); };
-    img.onerror = () => { i++; trySrc(); };
-    img.src = (E.path || "assets/emotes/") + file + exts[i];
-  })();
+  setEmoteSrc(img, file, () => { d.classList.add("in"); beep(880, 0.06, "square", 0.07); },
+                   () => { clearTimeout(timer); d.remove(); }); // no such emote, quiet exit
   return kill;
 }
 window.playEmote = playEmote; // console testing: playEmote("ezguccio1", "GG EZ")
@@ -2501,12 +2550,54 @@ const ADMIN_ITEMS = [
   ["call", "DIABETIC CALL"],
   ["blight", "BLIGHT DEFENSE"],
   ["maven", "MAVEN MEMORY"],
-  ["emoteWin", "EMOTE WIN"],
-  ["emoteSetback", "EMOTE SETBACK"],
-  ["emoteLose", "EMOTE LOSE"],
+  ["emotes", "EMOTES"],
 ];
+// the emote gallery: every category, every entry, click to preview it
+// exactly as the show would play it (own default caption included)
+function showAdminEmotes() {
+  $("admin").classList.add("hidden");
+  $("adminEmotes").classList.remove("hidden");
+  const cats = (CONFIG.emotes && CONFIG.emotes.categories) || {};
+  const grid = $("adminEmotesGrid");
+  grid.innerHTML = "";
+  Object.keys(cats).forEach((cat) => {
+    const list = cats[cat];
+    if (!list || !list.length) return;
+    const section = document.createElement("div");
+    section.className = "emCat";
+    const head = document.createElement("div");
+    head.className = "emCatHead";
+    const ht = document.createElement("span");
+    ht.textContent = cat.toUpperCase() + " (" + list.length + ")";
+    const rand = document.createElement("button");
+    rand.className = "emCatRandom";
+    rand.textContent = "RANDOM " + cat.toUpperCase();
+    rand.onclick = () => playEmote(cat); // exactly what the show would do
+    head.append(ht, rand);
+    const row = document.createElement("div");
+    row.className = "emCatRow";
+    list.forEach((e) => {
+      const it = document.createElement("div");
+      it.className = "emItem";
+      const im = document.createElement("img");
+      im.alt = e.file; im.draggable = false;
+      setEmoteSrc(im, e.file);
+      const nm = document.createElement("div");
+      nm.className = "emName"; nm.textContent = e.file;
+      const df = document.createElement("div");
+      df.className = "emDef"; df.textContent = e.text || "";
+      it.append(im, nm, df);
+      it.onclick = () => playEmote(e.file, e.text || "");
+      row.appendChild(it);
+    });
+    section.append(head, row);
+    grid.appendChild(section);
+  });
+}
+$("adminEmotesBack").onclick = showAdmin;
+
 function showAdmin() {
-  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call"].forEach((id) => {
+  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call", "adminEmotes"].forEach((id) => {
     const el = document.getElementById(id); if (el) el.classList.add("hidden");
   });
   const grid = $("adminBtns");
@@ -2515,9 +2606,7 @@ function showAdmin() {
       const b = document.createElement("button");
       b.textContent = label; b.dataset.phase = key;
       b.onclick = () => {
-        if (key === "emoteWin") { playEmote("win"); return; }       // stays in the hub
-        if (key === "emoteSetback") { playEmote("setback"); return; }
-        if (key === "emoteLose") { playEmote("lose"); return; }
+        if (key === "emotes") { showAdminEmotes(); return; }
         $("admin").classList.add("hidden");
         runPhase(key, showAdmin);
       };
