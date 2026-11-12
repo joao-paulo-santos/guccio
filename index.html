@@ -929,9 +929,8 @@ const CONFIG = {
     brick: "the vaal took it.",
   },
 
-  // EXPERIMENTAL, might be removed: the diabetic call interlude.
+  // the diabetic call interlude, second of the show.
   // guccio's day job crashes the birthday: stability drains, spam the pump, save the patient.
-  // currently parked: the maven's memory game below took its slot.
   call: {
     title: "Incoming call FROM A DIABETIC!!!!!",
     ringSub: "someone needs help with their insulin. pick up.",
@@ -1714,7 +1713,7 @@ function startFriends() {
 // ---------- strip machinery ----------
 const ITEM_W = 144; // 136px card + 8px gap, keep in sync with css if you touch sizes
 const HALF_W = 68;   // half a card, where the marker meets the strip
-let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, mavenDone = false;
+let roundIdx = 0, spinning = false, wonKeys = [], firstInterludeDone = false, callDone = false, mavenDone = false;
 
 function shuffle(a) {
   a = a.slice();
@@ -2003,10 +2002,11 @@ $("nextBtn").addEventListener("click", () => {
   const next = roundIdx + 1;
   if (next < CONFIG.rounds.length) {
     // interlude dispatch: atziri claims her vaal round whenever it lands,
-    // the trialmaster takes the first other one, then the EXPERIMENTAL maven
-    // memory game (the diabetic call is parked for now), tujen owns the rest
+    // the trialmaster takes the first other one, then the diabetic call,
+    // then the maven's memory game, and tujen owns everything after that
     if (currentRound.vaal && currentRound.upgrade) maybeShowVaal(currentRound, () => loadRound(next));
     else if (!firstInterludeDone) { firstInterludeDone = true; maybeShowTrial(() => loadRound(next)); }
+    else if (!callDone) { callDone = true; maybeShowCall(() => loadRound(next)); }
     else if (!mavenDone) { mavenDone = true; maybeShowMaven(() => loadRound(next)); }
     else maybeShowInterlude(next, () => loadRound(next));
   } else {
