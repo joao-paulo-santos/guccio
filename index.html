@@ -965,7 +965,7 @@ const CONFIG = {
         flavor: "the ball is your friend. so are we. mostly the ball.",
         // win sound: maven says "A battle for the ages, with exotic rewards to match..."
         sound: "https://cdn.poedb.tw/audio/dialogue/npc/maven/maven_158_01_a.ogg",
-        key: "PASTE-KEY-4-HERE",
+        key: "enc:eWByDQUYewVxNWROD2ALfS8=",
         from: "Crusader Dufus",
       },
       nearMiss: {
@@ -1997,6 +1997,31 @@ $("photo").src = "assets/photo.webp";
 $("tujenImg").src = "assets/tujen.webp";
 
 // ---------- intro ----------
+// dev shortcuts, straight from the url: ?phase=x opens one mechanic directly
+// so it can be tested without replaying the whole show. reward skips to the
+// final loot screen with everything marked won, which also doubles as the
+// "let me back in to copy my keys" link once the party is over.
+function startPhase(phase) {
+  if (!phase) { startIntro(); return; }
+  introEl.classList.add("hidden");
+  const backToGame = () => loadRound(0);
+  if (phase === "reward") {
+    wonKeys = CONFIG.rounds.slice(); // everything won, straight to the loot
+    showFinal();
+    return;
+  }
+  if (phase === "vaal") {
+    const vr = CONFIG.rounds.find((r) => r.vaal && r.upgrade) || CONFIG.rounds[0];
+    roundIdx = CONFIG.rounds.indexOf(vr); // a brick requeues from a sane spot
+    maybeShowVaal(vr, backToGame);
+    return;
+  }
+  if (phase === "tujen") { maybeShowInterlude(0, backToGame); return; }
+  if (phase === "blight") { maybeShowBlight(backToGame); return; }
+  if (phase === "maven") { maybeShowMaven(backToGame); return; }
+  startIntro(); // unknown phase, the normal show
+}
+
 function startIntro() {
   // izaro greets him the moment the birthday animation starts.
   // if the browser still blocks sound, he speaks on the first click instead.
@@ -2490,10 +2515,18 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
 (function gateAndStart() {
   const G = CONFIG.passwordGate;
   const gateEl = $("gate");
+  // everything rides in the url:
+  //   ?password=x  unlocks on its own, no retyping every reload
+  //   ?person=x    second factor for the key vault, only guccio gets real keys
+  //   ?phase=x     dev shortcut: reward, vaal, tujen, blight or maven
+  const params = new URLSearchParams(window.location.search);
+  URL_PERSON = params.get("person") || "";
+  const urlPass = params.get("password");
+  const phase = params.get("phase");
   // gate stays off until a real verifier is pasted in, so the page keeps working during edits
   if (!G || !G.verifier || G.verifier.indexOf("PASTE") === 0) {
     gateEl.classList.add("hidden");
-    startIntro();
+    startPhase(phase);
     return;
   }
   $("gateHint").textContent = G.hint || "";
@@ -2509,7 +2542,7 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
       // birthday url gets keys that unscramble
       SESSION_VAULT_HEX = await pbkdf2Hex(pass + "|" + URL_PERSON, G.vaultSalt || G.salt, 100000);
       gateEl.classList.add("fading");
-      setTimeout(() => { gateEl.classList.add("hidden"); startIntro(); }, 650);
+      setTimeout(() => { gateEl.classList.add("hidden"); startPhase(phase); }, 650);
     } else {
       $("gateErr").textContent = "nope. even the crabs guess better.";
       $("gatePass").value = "";
@@ -2519,11 +2552,6 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dropsBack
   $("gateBtn").addEventListener("click", () => tryPass());
   $("gatePass").addEventListener("keydown", (e) => { if (e.key === "Enter") tryPass(); });
 
-  // lazy reload: ?password=whatever unlocks on its own, no retyping every reload.
-  // ?person=x rides along silently and only matters for the key vault.
-  const params = new URLSearchParams(window.location.search);
-  URL_PERSON = params.get("person") || "";
-  const urlPass = params.get("password");
   if (urlPass) { $("gatePass").value = urlPass; tryPass(urlPass); }
 })();
 </script>
