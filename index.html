@@ -296,6 +296,8 @@
     position:fixed; left:0; top:0; font-size:72px; z-index:96; pointer-events:none;
     filter:drop-shadow(0 6px 12px rgba(0,0,0,.6));
   }
+  .ghostChaser.hit { animation:monHit .3s ease; }
+  @keyframes monHit { 30% { filter:brightness(2.6) saturate(2) drop-shadow(0 0 18px rgba(255,60,40,.9)); transform:var(--mv) scale(1.15); } }
   .ghostChaser.flat { animation:monFlat .25s ease forwards; }
   @keyframes monFlat { to { transform:scaleY(.15) translateY(26px); opacity:0; } }
   .popBurst {
@@ -2709,9 +2711,10 @@ function ghostAbduct(ghostSrc, el, done, opts) {
   return wrap;
 }
 
-// rua's heist, same engine: the rat chases him in, he grabs the divine,
-// flattens the rat right when he passes it, and the rat drops a mageblood
-// that then chases rua off screen. rua's luck is real.
+// rua's heist, fully choreographed on the mover engine: he walks to the
+// divine, then detours to the rat that chased him, kills it on arrival, the
+// mageblood drops while he stands there, he steps over to grab it, and only
+// then leaves the screen carrying both. rua's luck is real.
 function ghostRuaHeist(el, done) {
   const r = el.getBoundingClientRect();
   const fromLeft = (r.left + r.width / 2) < window.innerWidth / 2;
@@ -2728,59 +2731,66 @@ function ghostRuaHeist(el, done) {
   const rat = makeMover(mon, startX - sign * 150, r.top + r.height / 2 - 36);
   $("blight").dataset.chaser = "1";
 
-  let flattened = false;
-  rua.each = () => { // the pass: flatten the rat the moment rua reaches it
-    if (flattened || !rua.leaving) return;
-    if (Math.abs(rua.x + 120 - rat.x) > 90) return;
-    flattened = true;
-    const mr = mon.getBoundingClientRect();
-    const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
-    mon.classList.add("flat");
-    setTimeout(() => { killMover(rat); mon.remove(); }, 300);
-    beep(150, 0.12, "square", 0.12); beep(90, 0.2, "sawtooth", 0.1, 0.06);
-    const fx = document.createElement("div");
-    fx.className = "popBurst"; fx.textContent = "\uD83D\uDCA5";
-    fx.style.left = cx + "px"; fx.style.top = cy + "px";
-    document.body.appendChild(fx);
-    setTimeout(() => fx.remove(), 420);
-    // the rat drops a mageblood. rua takes it, obviously
-    const mb = document.createElement("div");
-    mb.className = "mbDrop"; mb.title = "mageblood";
-    mb.style.backgroundImage = 'url("assets/mageblood.png")';
-    mb.style.left = (cx - 55) + "px"; mb.style.top = (cy - 16) + "px";
-    document.body.appendChild(mb);
-    const mbM = makeMover(mb, cx, 0);
-    $("blight").dataset.mageblood = "1";
-    playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
-    setTimeout(() => { // it chases after him, trailing from where it dropped
-      const ref = rua.grabX !== undefined ? rua.grabX : rua.x;
-      mbM.follow = rua;
-      mbM.offX = -(rua.x - ref); // start of the chase: no jump
-    }, 450);
-  };
-
   let grabbed = false;
   const grab = () => {
     if (grabbed) return;
     grabbed = true;
     const rw = ruaW.getBoundingClientRect().width || 130;
     const gx = itemX - rw / 2;
-    moveOrder(rua, gx, 500 + Math.abs(gx - startX), () => { // arrived: take it
+    const ratEnd = gx - sign * 95; // the rat stops short of him, a real gap
+    // rua walks to the divine, the rat lags well behind
+    moveOrder(rua, gx, 500 + Math.abs(gx - startX), () => {
       rua.grabX = rua.x;
-      const item = makeMover(el, 0, 0);
+      const item = makeMover(el, 0, 0); // the divine never leaves his hands
       item.follow = rua; item.offX = 0;
-      setTimeout(() => { // hold the divine a beat, then the long walk home
-        rua.leaving = true; // from here on, watch for the rat on the way out
-        const away = rua.x - sign * window.innerWidth * 1.5;
-        moveOrder(rua, away, 1100, () => { killMover(rua); wrap2done(); });
+      setTimeout(() => { // divine secured: go deal with the rat
+        moveOrder(rua, ratEnd, 500 + Math.abs(ratEnd - gx), () => {
+          // the fight: the rat takes it, then drops
+          mon.style.setProperty("--mv", mon.style.transform);
+          mon.classList.add("hit");
+          beep(300, 0.08, "square", 0.12); beep(220, 0.1, "square", 0.1, 0.07);
+          setTimeout(() => {
+            mon.classList.remove("hit");
+            mon.classList.add("flat");
+            const mr = mon.getBoundingClientRect();
+            const cx = mr.left + mr.width / 2, cy = mr.top + mr.height / 2;
+            setTimeout(() => { killMover(rat); mon.remove(); }, 300);
+            const fx = document.createElement("div");
+            fx.className = "popBurst"; fx.textContent = "\uD83D\uDCA5";
+            fx.style.left = cx + "px"; fx.style.top = cy + "px";
+            document.body.appendChild(fx);
+            setTimeout(() => fx.remove(), 420);
+            // the mageblood drops while rua stands over the kill
+            const mb = document.createElement("div");
+            mb.className = "mbDrop"; mb.title = "mageblood";
+            mb.style.backgroundImage = 'url("assets/mageblood.png")';
+            const mbX = cx + sign * 70; // it rolls a little away from him
+            mb.style.left = (mbX - 55) + "px"; mb.style.top = (cy - 16) + "px";
+            document.body.appendChild(mb);
+            $("blight").dataset.mageblood = "1";
+            playPrizeSound("https://www.myinstants.com/media/sounds/alertsound6.mp3");
+            setTimeout(() => { // he steps over and picks it up too
+              moveOrder(rua, mbX - rw / 2, 350, () => {
+                const mbM = makeMover(mb, 0, 0); // now both are his
+                mbM.follow = rua; mbM.offX = 0;
+                setTimeout(() => { // only now does he leave, with everything
+                  const away = rua.x - sign * window.innerWidth * 1.5;
+                  moveOrder(rua, away, 1100, () => {
+                    killMover(rua);
+                    killMover(MOVERS.find((k) => k.el === el));
+                    killMover(MOVERS.find((k) => k.el === mb));
+                    mb.remove();
+                    if (done) done();
+                  });
+                }, 450);
+              });
+            }, 500);
+          }, 350);
+        });
       }, 450);
     });
-    moveOrder(rat, gx - sign * 95, 500 + Math.abs(gx - startX) * 1.35); // slower, almost gets him
+    moveOrder(rat, ratEnd, 500 + Math.abs(ratEnd - startX) * 1.9); // slower, a gap always remains
   };
-  function wrap2done() {
-    killMover(MOVERS.find((m) => m.el === el));
-    if (done) done();
-  }
   ruaI.onload = grab;
   setTimeout(grab, 300);
 }
