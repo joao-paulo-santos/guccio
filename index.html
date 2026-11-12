@@ -494,7 +494,20 @@
   #adminRewardsBox { text-align:center; width:min(94vw,900px); margin:0 auto; padding:30px 0 40px; }
   #adminRewardsTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
   #adminRewardsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #rwTabs { display:flex; gap:8px; justify-content:center; margin-top:16px; }
+  #rwTabs button {
+    padding:8px 20px; font-size:11px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#5c1414,#3d0b0b); border:1px solid #3a0808;
+  }
+  #rwTabs button.on { background:linear-gradient(180deg,#8c2020,#5a0f0f); box-shadow:0 0 12px rgba(200,40,40,.4); }
+  #rwTabs button:hover { filter:brightness(1.2); }
   #adminRewardsGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+  .rwPair { display:flex; gap:8px; }
+  .rwPair .card.hnear { transform:scale(.78); transform-origin:bottom center; opacity:.85; cursor:default; }
+  .rwPair .card.hnear:hover { transform:scale(.78); box-shadow:none; }
+  #adminFillersGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+  #adminFillersGrid .card { cursor:default; }
   #adminRewardsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
   #adminRewardsGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(255,207,63,.4); }
   #adminRewardsBack {
@@ -894,8 +907,13 @@
 <div id="adminRewards" class="screen hidden">
   <div id="adminRewardsBox">
     <div id="adminRewardsTitle">REWARDS</div>
-    <div id="adminRewardsSub">click any reward to preview its win effect, sound and key reveal included.</div>
+    <div id="adminRewardsSub">click any reward to preview its win effect, sound and key reveal included. the smaller card beside each prize is its near miss.</div>
+    <div id="rwTabs">
+      <button id="rwTabPrizes" class="on">PRIZES</button>
+      <button id="rwTabFillers">FILLERS</button>
+    </div>
     <div id="adminRewardsGrid"></div>
+    <div id="adminFillersGrid" class="hidden"></div>
     <button id="adminRewardsBack">BACK TO HUB</button>
   </div>
 </div>
@@ -2845,30 +2863,57 @@ function showAdminRewards() {
   $("admin").classList.add("hidden");
   $("adminRewards").classList.remove("hidden");
   const grid = $("adminRewardsGrid");
+  const fills = $("adminFillersGrid");
   grid.innerHTML = "";
-  const preview = [];
-  CONFIG.rounds.forEach((r) => preview.push({ label: r.caseName, r }));
-  // the corrupted variants are rewards too: what atziri can turn them into
+  fills.innerHTML = "";
+
+  // every round: the prize beside its near miss
   CONFIG.rounds.forEach((r) => {
-    if (!r.upgrade) return;
-    preview.push({ label: "ATZIRI'S VAAL", r: { caseName: "ATZIRI'S VAAL",
-      prize: Object.assign({}, r.prize, { name: r.upgrade.name, img: r.upgrade.img || r.prize.img, vaaled: true }) } });
-  });
-  ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
-    if (!CONFIG.rounds.some((r) => r.prize.name === g.name)) {
-      preview.push({ label: "THE SACRED GROVE", r: { caseName: "THE SACRED GROVE",
-        prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img, tier: "gold", key: g.key, from: ["Ecila", "Patty"] } } });
-    }
-  });
-  preview.forEach(({ label, r }) => {
-    const c = makeCard(Object.assign({ tier: "gold", sub: label }, r.prize));
+    const pair = document.createElement("div");
+    pair.className = "rwPair";
+    const c = makeCard(Object.assign({ tier: "gold", sub: r.caseName }, r.prize));
     c.onclick = () => {
       playPrizeSound(r.prize.sound); // the win theme, if it has one
       openWinModal(r, true); // view mode: BACK instead of CONTINUE
     };
+    pair.appendChild(c);
+    if (r.nearMiss) {
+      const n = makeCard(r.nearMiss);
+      n.classList.add("hnear"); // the almost, not clickable, it was never real
+      pair.appendChild(n);
+    }
+    grid.appendChild(pair);
+  });
+  // the corrupted variants are rewards too: what atziri can turn them into
+  CONFIG.rounds.forEach((r) => {
+    if (!r.upgrade) return;
+    const c = makeCard({ tier: "gold", sub: "ATZIRI'S VAAL", emoji: r.prize.emoji,
+      name: r.upgrade.name, img: r.upgrade.img || r.prize.img, vaaled: true });
+    c.onclick = () => openWinModal({ caseName: "ATZIRI'S VAAL",
+      prize: Object.assign({}, r.prize, { name: r.upgrade.name, img: r.upgrade.img || r.prize.img, vaaled: true }) }, true);
     grid.appendChild(c);
   });
+  // and the grove-only games
+  ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
+    if (CONFIG.rounds.some((r) => r.prize.name === g.name)) return;
+    const r = { caseName: "THE SACRED GROVE",
+      prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img, tier: "gold", key: g.key, from: ["Ecila", "Patty"] } };
+    const c = makeCard(Object.assign({ tier: "gold", sub: r.caseName }, r.prize));
+    c.onclick = () => openWinModal(r, true);
+    grid.appendChild(c);
+  });
+  // the second tab: every filler joke item, the ones that never drop for real
+  CONFIG.jokeItems.forEach((j) => fills.appendChild(makeCard(j)));
+  rwSwitchTab(true);
 }
+function rwSwitchTab(prizes) {
+  $("rwTabPrizes").classList.toggle("on", prizes);
+  $("rwTabFillers").classList.toggle("on", !prizes);
+  $("adminRewardsGrid").classList.toggle("hidden", !prizes);
+  $("adminFillersGrid").classList.toggle("hidden", prizes);
+}
+$("rwTabPrizes").onclick = () => rwSwitchTab(true);
+$("rwTabFillers").onclick = () => rwSwitchTab(false);
 $("adminRewardsBack").onclick = showAdmin;
 
 // the emote gallery: every category, every entry, click to preview it
