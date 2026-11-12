@@ -458,6 +458,21 @@
   #adminBtns button:hover { filter:brightness(1.2); }
   #adminFine { margin-top:20px; color:#4a5162; font-size:11px; }
 
+  /* ============ REWARD HUB ============ */
+  #adminRewards { background:#0b0d12; z-index:75; overflow-y:auto; }
+  #adminRewardsBox { text-align:center; width:min(94vw,900px); margin:0 auto; padding:30px 0 40px; }
+  #adminRewardsTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
+  #adminRewardsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #adminRewardsGrid { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:20px; }
+  #adminRewardsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
+  #adminRewardsGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(255,207,63,.4); }
+  #adminRewardsBack {
+    margin-top:24px; padding:10px 26px; font-size:12px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808; box-shadow:0 3px 0 #2c0505;
+  }
+  #adminRewardsBack:hover { filter:brightness(1.2); }
+
   /* ============ EMOTE GALLERY ============ */
   #adminEmotes { background:#0b0d12; z-index:75; overflow-y:auto; }
   #adminEmotesBox { text-align:center; width:min(94vw,860px); margin:0 auto; padding:30px 0 40px; }
@@ -843,6 +858,16 @@
   </div>
 </div>
 <div id="adminBar" class="hidden"><button id="adminHub">HUB</button></div>
+
+<!-- ==================== REWARD HUB (?phase=admin) ==================== -->
+<div id="adminRewards" class="screen hidden">
+  <div id="adminRewardsBox">
+    <div id="adminRewardsTitle">REWARDS</div>
+    <div id="adminRewardsSub">click any reward to preview its win effect, sound and key reveal included.</div>
+    <div id="adminRewardsGrid"></div>
+    <button id="adminRewardsBack">BACK TO HUB</button>
+  </div>
+</div>
 
 <!-- ==================== EMOTE GALLERY (?phase=admin) ==================== -->
 <div id="adminEmotes" class="screen hidden">
@@ -2612,8 +2637,35 @@ const ADMIN_ITEMS = [
   ["call", "DIABETIC CALL"],
   ["blight", "BLIGHT DEFENSE"],
   ["maven", "MAVEN MEMORY"],
+  ["rewards", "REWARD PREVIEW"],
   ["emotes", "EMOTES"],
 ];
+// the reward hub: every reward in the show, click one to live through its
+// win modal exactly as he would, win theme included
+function showAdminRewards() {
+  $("admin").classList.add("hidden");
+  $("adminRewards").classList.remove("hidden");
+  const grid = $("adminRewardsGrid");
+  grid.innerHTML = "";
+  const preview = [];
+  CONFIG.rounds.forEach((r) => preview.push({ label: r.caseName, r }));
+  ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
+    if (!CONFIG.rounds.some((r) => r.prize.name === g.name)) {
+      preview.push({ label: "THE SACRED GROVE", r: { caseName: "THE SACRED GROVE",
+        prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img, tier: "gold", key: g.key, from: ["Ecila", "Patty"] } } });
+    }
+  });
+  preview.forEach(({ label, r }) => {
+    const c = makeCard(Object.assign({ tier: "gold", sub: label }, r.prize));
+    c.onclick = () => {
+      playPrizeSound(r.prize.sound); // the win theme, if it has one
+      openWinModal(r, true); // view mode: BACK instead of CONTINUE
+    };
+    grid.appendChild(c);
+  });
+}
+$("adminRewardsBack").onclick = showAdmin;
+
 // the emote gallery: every category, every entry, click to preview it
 // exactly as the show would play it (own default caption included)
 function showAdminEmotes() {
@@ -2659,7 +2711,7 @@ function showAdminEmotes() {
 $("adminEmotesBack").onclick = showAdmin;
 
 function showAdmin() {
-  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call", "adminEmotes"].forEach((id) => {
+  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call", "adminEmotes", "adminRewards"].forEach((id) => {
     const el = document.getElementById(id); if (el) el.classList.add("hidden");
   });
   const grid = $("adminBtns");
@@ -2668,6 +2720,7 @@ function showAdmin() {
       const b = document.createElement("button");
       b.textContent = label; b.dataset.phase = key;
       b.onclick = () => {
+        if (key === "rewards") { showAdminRewards(); return; }
         if (key === "emotes") { showAdminEmotes(); return; }
         $("admin").classList.add("hidden");
         runPhase(key, showAdmin);
@@ -3064,9 +3117,9 @@ function fallbackCopy(txt, done) {
 $("nextBtn").addEventListener("click", () => {
   $("modalBack").classList.remove("show");
   setTimeout(() => $("modalBack").classList.add("hidden"), 300);
-  // a prize flagged soundCut has its win theme silenced on continue, every
-  // other win sound keeps playing like it always did
-  if (modalMode !== "view" && currentRound && currentRound.prize && currentRound.prize.soundCut && prizeAudio) {
+  // a prize flagged soundCut has its win theme silenced on continue (and on
+  // BACK from a preview), every other win sound keeps playing like it did
+  if (currentRound && currentRound.prize && currentRound.prize.soundCut && prizeAudio) {
     try { prizeAudio.pause(); } catch (e) {}
   }
   if (modalMode === "view") return; // came from the final screen, just close
