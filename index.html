@@ -1233,6 +1233,28 @@ const CONFIG = {
       landAt: 53,
     },
     {
+      caseName: "THE GARAGE CRATE",
+      caseNote: "one of these is worth slightly more than the other",
+      troll: true, // lands on the near miss first, then rolls on to the prize
+      prize: {
+        name: "Special Guccio Mug",
+        sub:  "one of one",
+        emoji:"☕",
+        img: "assets/bestmug.png",
+        tier: "gold",
+        flavor: "the rarest drop in the house. dishwasher safe. emotionally priceless.",
+        reveal: "it is a mug. it is THE mug. handle it with love.",
+      },
+      nearMiss: {
+        name: "Lamborghini",
+        sub:  "it can be yours. for about a second.",
+        emoji:"🏎️",
+        img: "assets/lambo.png",
+        tier: "red",
+      },
+      landAt: 57,
+    },
+    {
       caseName: "THE SACK RACE CRATE",
       caseNote: "three losses in a row and the board calls an emergency meeting",
       preFinale: true, // the whole squad chipped in, it plays right before the finale
@@ -3246,7 +3268,10 @@ function spin() {
   const r = CONFIG.rounds[roundIdx];
   const w = winEl.clientWidth;
   const pre = Math.ceil(w / 2 / ITEM_W) + 3; // filler cards before the landing zone
+  const troll = !!r.troll;
+  const mugGap = 3; // the strip rolls this many cards further to the real prize
   const prizeIdx = pre + r.landAt;
+  const finalIdx = troll ? prizeIdx + mugGap : prizeIdx;
 
   // build the strip: filler, filler, ... nearMiss, PRIZE, a few fillers.
   // nothing repeats inside any visible stretch of 8 cards, no twins side by side,
@@ -3279,9 +3304,17 @@ function spin() {
   // sits against whichever border the marker ends up kissing.
   const side = Math.random() < 0.5 ? -1 : 1; // -1: barely made it, +1: almost went over
   const seq = [];
-  for (let k = 0; k < prizeIdx + 9; k++) {
+  for (let k = 0; k < finalIdx + 9; k++) {
     let it;
-    if (k === prizeIdx) it = r.prize;                                  // the one and only copy
+    if (troll) {
+      // the lambo lands on the marker first, the mug waits three cards on
+      if (k === prizeIdx) it = r.nearMiss;
+      else if (k === finalIdx) it = r.prize;
+      else if (k === prizeIdx - side || k === prizeIdx - 2 * side || k === prizeIdx - 3 * side)
+        it = pickTension("pink", "red");
+      else if (k > prizeIdx && k < finalIdx) it = pickTension("red", "pink");
+      else it = pickFiller();
+    } else if (k === prizeIdx) it = r.prize;                           // the one and only copy
     else if (k === prizeIdx - side) it = r.nearMiss;                   // the almost, on the landing border
     else if (k === prizeIdx - 2 * side) it = pickTension("pink", "red"); // extra fake tension
     else if (k === prizeIdx - 3 * side) it = pickTension("red", "pink");
@@ -3315,15 +3348,40 @@ function spin() {
   }
 
 
-  function settle() {
-    stripEl.style.transform = "translateX(" + tx1 + "px)";
-    const winner = cards[prizeIdx];
+  function finishWin(txEnd) {
+    stripEl.style.transform = "translateX(" + txEnd + "px)";
+    const winner = cards[finalIdx];
     winner.classList.add("winner");
     setTimeout(() => {
       if (r.prize.sound) playPrizeSound(r.prize.sound); // maven judges the win
       else jingle();
       openWinModal(r);
     }, 750);
+  }
+  function settle() {
+    stripEl.style.transform = "translateX(" + tx1 + "px)";
+    if (!troll) { finishWin(tx1); return; }
+    // he thinks the lamborghini is his. it is not.
+    beep(233, 0.3, "sine", 0.12); beep(196, 0.45, "sine", 0.12, 0.35); // aww.
+    setTimeout(() => { // and the strip rolls on, unbothered
+      const tx2 = w / 2 - HALF_W - finalIdx * ITEM_W + side * (6 + Math.random() * 8);
+      const d2 = Math.max(700, dur * 0.3);
+      const s0 = performance.now();
+      let lastIdx2 = -1, lastTick2 = 0;
+      (function frame2(now) {
+        const t = Math.min(1, (now - s0) / d2);
+        const tx = tx1 + (tx2 - tx1) * easeOut(t);
+        stripEl.style.transform = "translateX(" + tx + "px)";
+        const idx2 = Math.round((w / 2 - tx - HALF_W) / ITEM_W);
+        if (idx2 !== lastIdx2) {
+          lastIdx2 = idx2;
+          if (now - lastTick2 > 45) { tick(); lastTick2 = now; }
+          markerEl.classList.remove("tok"); void markerEl.offsetWidth; markerEl.classList.add("tok");
+        }
+        if (t < 1) requestAnimationFrame(frame2);
+        else finishWin(tx2);
+      })(s0);
+    }, 1350);
   }
 
   requestAnimationFrame(frame);
