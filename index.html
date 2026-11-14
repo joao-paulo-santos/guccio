@@ -1462,8 +1462,10 @@ const CONFIG = {
     lifeforceLabel: "Vivid Crystallised Lifeforce",
     lifeforceImg: "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvSGFydmVzdC9WaXZpZExpZmVmb3JjZSIsInNjYWxlIjoxfV0/a355b8a5a2/VividLifeforce.png",
     craft: "CRAFT",
-    luck: 0.85,      // the grove skims fifteen percent off a fair roll
-    pityPerLoss: 0.05, // every complete loss softens the next grove by five percent, forever cumulative
+    luck: 0.85,        // the grove's base. the vaal coin reads this minus its lag, the grove itself no longer scales with it
+    unluckBase: 5,     // percent chance every craft outright dies
+    unluckPerOwned: 5, // each game already owned adds percent, greed gets tense near the full set
+    pityPerLoss: 5,    // every complete loss shaves this many percent off, going negative flips into jackpot odds
     oddsLabel: "STAKED",              // "STAKED 2: the craft yields 0 - 4"
     yieldLabel: "the craft yields",
     cappedNote: "the grove gives all it has",
@@ -2342,13 +2344,12 @@ function maybeShowBlight(goNext) {
 // between zero and double the stake, capped at the full set of four games.
 // the grove only lets him leave owning everything or nothing. a total loss
 // puts the crate game back in the pool, so the crates always provide again.
-// grove pity: each visit that ends with nothing makes the next grove luckier,
-// so a losing streak can never trap him outside the birthday
+// grove pity: each visit that ends with nothing shaves percent off the next
+// grove's unluck, so a losing streak can never trap him outside the birthday
 let harvestLossStreak = 0;
 
 function maybeShowHarvest(round, goNext) {
   const H = CONFIG.harvest || {};
-  const luck = (H.luck || 1) + (H.pityPerLoss || 0) * harvestLossStreak; // the grove remembers
   const games = (H.games && H.games.length) ? H.games : [];
   const TOTAL = games.length;
   const screen = $("harvest");
@@ -2452,9 +2453,18 @@ function maybeShowHarvest(round, goNext) {
     setTimeout(() => {
       const s = staked.size;
       const before = owned.size;
-      // 0 to double, inclusive, scaled by luck (plus any earned pity)
-      const roll = Math.floor(Math.random() * (2 * s + 1) * luck);
       const safe = new Set([...owned].filter((nm) => !staked.has(nm))); // never at risk
+      // the new grove dice: unluck is a flat bust chance per craft, grown by
+      // everything he already owns and softened by every complete loss.
+      // pity past zero flips the coin, the same percent becomes jackpot odds
+      // (the plot pays the most it can). between the extremes the roll is
+      // fair, one to double the stake, so zero only ever comes from unluck
+      const unluck = (H.unluckBase || 0) + (H.unluckPerOwned || 0) * owned.size - (H.pityPerLoss || 0) * harvestLossStreak;
+      const u = unluck / 100;
+      let roll;
+      if (u > 0 && Math.random() < u) roll = 0; // the craft dies on the spot
+      else if (u < 0 && Math.random() < -u) roll = Math.min(2 * s, TOTAL - safe.size); // pity jackpot
+      else roll = 1 + Math.floor(Math.random() * 2 * s); // fair: one to double, never zero
       const raw = safe.size + roll;
       const capped = raw > TOTAL;
       const final = Math.min(raw, TOTAL);
