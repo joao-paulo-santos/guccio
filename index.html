@@ -1465,7 +1465,7 @@ const CONFIG = {
     luck: 0.85,        // the grove's base. the vaal coin reads this minus its lag, the grove itself no longer scales with it
     unluckBase: 5,     // percent skew against him baked into every craft
     unluckPerOwned: 5, // each game already owned skews the plot further against him
-    pityPerLoss: 5,    // every complete loss softens the skew by this much, past zero the luck goes above one
+    pityPerLoss: 5,    // every complete loss softens the skew by this much, past zero the luck bends toward double but never pays over it
     oddsLabel: "STAKED",              // "STAKED 2: the craft yields 0 - 4"
     yieldLabel: "the craft yields",
     cappedNote: "the grove gives all it has",
@@ -2459,10 +2459,11 @@ function maybeShowHarvest(round, goNext) {
       // percent starts slightly skewed against him, grows with every game
       // he already owns (the closer the full set, the meaner the plot) and
       // every complete loss softens it back. pity past zero simply means
-      // luck above one: the craft can pay more than double the stake
+      // luck above one: the curve bends toward double, but the plot never
+      // pays more than double the stake, the roll is clamped there
       const unluck = (H.unluckBase || 0) + (H.unluckPerOwned || 0) * owned.size - (H.pityPerLoss || 0) * harvestLossStreak;
       const luck = 1 - unluck / 100;
-      const roll = Math.floor(Math.random() * (2 * s + 1) * luck);
+      const roll = Math.min(2 * s, Math.floor(Math.random() * (2 * s + 1) * luck));
       const raw = safe.size + roll;
       const capped = raw > TOTAL;
       const final = Math.min(raw, TOTAL);
