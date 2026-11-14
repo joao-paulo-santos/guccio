@@ -553,6 +553,22 @@
     background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808; box-shadow:0 3px 0 #2c0505;
   }
   #adminEmotesBack:hover { filter:brightness(1.2); }
+
+  /* ============ SPONSORS WALL ============ */
+  #adminSponsors { background:#0b0d12; z-index:75; overflow-y:auto; justify-content:flex-start; }
+  #adminSponsorsBox { text-align:center; width:min(94vw,900px); margin:auto; padding:30px 0 40px; }
+  #adminSponsorsTitle { font-family:Impact,"Arial Black",sans-serif; letter-spacing:4px; color:#eb4b4b; font-size:clamp(20px,3.6vw,30px); }
+  #adminSponsorsSub { color:#8b93a3; font-size:13px; margin-top:8px; }
+  #adminSponsorsGrid { margin-top:20px; text-align:left; }
+  #adminSponsorsGrid .spRow { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+  #adminSponsorsGrid .card { cursor:pointer; transition:transform .1s ease, box-shadow .1s ease; }
+  #adminSponsorsGrid .card:hover { transform:translateY(-3px); box-shadow:0 0 14px rgba(255,207,63,.4); }
+  #adminSponsorsBack {
+    margin-top:24px; padding:10px 26px; font-size:12px; font-weight:800; letter-spacing:2px;
+    border-radius:4px; cursor:pointer; color:#f0d9c0;
+    background:linear-gradient(180deg,#8c2020,#5a0f0f); border:1px solid #3a0808; box-shadow:0 3px 0 #2c0505;
+  }
+  #adminSponsorsBack:hover { filter:brightness(1.2); }
   #adminBar { position:fixed; top:10px; right:12px; z-index:95; }
   #adminHub {
     padding:8px 16px; font-size:11px; font-weight:800; letter-spacing:2px;
@@ -938,6 +954,16 @@
     <button id="adminEmotesBack">BACK TO HUB</button>
   </div>
 </div>
+
+<!-- ==================== SPONSORS WALL (?phase=admin) ==================== -->
+<div id="adminSponsors" class="screen hidden">
+  <div id="adminSponsorsBox">
+    <div id="adminSponsorsTitle">SPONSORS</div>
+    <div id="adminSponsorsSub">who is behind what. click a gift to live through its win modal.</div>
+    <div id="adminSponsorsGrid"></div>
+    <button id="adminSponsorsBack">BACK TO HUB</button>
+  </div>
+</div>
 <div id="emotes"></div>
 
 <!-- ==================== HARVEST GROVE ==================== -->
@@ -1245,6 +1271,7 @@ const CONFIG = {
         tier: "gold",
         flavor: "the rarest drop in the house. dishwasher safe. emotionally priceless.",
         reveal: "it is a mug. it is THE mug. handle it with love.",
+        from: "Temp",
       },
       nearMiss: {
         name: "Lamborghini",
@@ -2912,6 +2939,7 @@ const ADMIN_ITEMS = [
   ["blight", "BLIGHT DEFENSE"],
   ["maven", "MAVEN MEMORY"],
   ["rewards", "REWARD PREVIEW"],
+  ["sponsors", "SPONSORS"],
   ["emotes", "EMOTES"],
 ];
 // the reward hub: every reward in the show, click one to live through its
@@ -3037,8 +3065,56 @@ function showAdminEmotes() {
 }
 $("adminEmotesBack").onclick = showAdmin;
 
+// the sponsors wall: every gifter next to their gifts, so nobody hides.
+// rounds carry the from field (string or crew list), grove-only games count
+// as ecila and patty's, same call as the reward preview makes
+function showAdminSponsors() {
+  $("admin").classList.add("hidden");
+  $("adminSponsors").classList.remove("hidden");
+  const grid = $("adminSponsorsGrid");
+  grid.innerHTML = "";
+  const wall = new Map(); // sponsor name -> the rounds they are behind
+  const credit = (from, rd) => {
+    if (!from) return;
+    (Array.isArray(from) ? from : [from]).forEach((p) => {
+      if (!wall.has(p)) wall.set(p, []);
+      wall.get(p).push(rd);
+    });
+  };
+  CONFIG.rounds.forEach((r) => credit(r.prize.from, r));
+  ((CONFIG.harvest && CONFIG.harvest.games) || []).forEach((g) => {
+    if (CONFIG.rounds.some((r) => r.prize.name === g.name)) return;
+    credit(["Ecila", "Patty"], { caseName: "THE SACRED GROVE",
+      prize: { name: g.name, sub: "steam key", emoji: g.emoji, img: g.img, tier: "gold", key: g.key, from: ["Ecila", "Patty"] } });
+  });
+  // prizes nobody signed yet get a wall of shame at the bottom, in red
+  const orphans = CONFIG.rounds.filter((r) => !r.prize.from);
+  const sponsorBlock = (label, rounds, shame) => {
+    const section = document.createElement("div");
+    section.className = "emCat";
+    const head = document.createElement("div");
+    head.className = "emCatHead";
+    const ht = document.createElement("span");
+    ht.textContent = label.toUpperCase() + " (" + rounds.length + ")";
+    if (shame) ht.style.color = "#eb4b4b";
+    head.appendChild(ht);
+    const row = document.createElement("div");
+    row.className = "spRow";
+    rounds.forEach((rd) => {
+      const c = makeCard(Object.assign({ tier: "gold", sub: rd.caseName }, rd.prize));
+      c.onclick = () => { playPrizeSound(rd.prize.sound); openWinModal(rd, true, rd.nearMiss); };
+      row.appendChild(c);
+    });
+    section.append(head, row);
+    grid.appendChild(section);
+  };
+  wall.forEach((rounds, sponsor) => sponsorBlock(sponsor, rounds, false));
+  if (orphans.length) sponsorBlock("nobody signed yet", orphans, true);
+}
+$("adminSponsorsBack").onclick = showAdmin;
+
 function showAdmin() {
-  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call", "adminEmotes", "adminRewards"].forEach((id) => {
+  ["intro", "friends", "game", "final", "maven", "blight", "harvest", "trial", "vaal", "interlude", "call", "adminEmotes", "adminRewards", "adminSponsors"].forEach((id) => {
     const el = document.getElementById(id); if (el) el.classList.add("hidden");
   });
   const grid = $("adminBtns");
@@ -3048,6 +3124,7 @@ function showAdmin() {
       b.textContent = label; b.dataset.phase = key;
       b.onclick = () => {
         if (key === "rewards") { showAdminRewards(); return; }
+        if (key === "sponsors") { showAdminSponsors(); return; }
         if (key === "emotes") { showAdminEmotes(); return; }
         $("admin").classList.add("hidden");
         runPhase(key, showAdmin);
